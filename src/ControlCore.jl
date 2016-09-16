@@ -23,52 +23,45 @@ import Base: +, .+, -, .-, *, .*, /, ./, ==, !=, isapprox, transpose
 
 # Export only the useful functions
 export
-  tf,
-  zpk,
-  ss,
-  mimo,
-  series,
-  paralell,
-  feedback,
+  # Interfaces
   numstates,
   numinputs,
   numoutputs,
-  getmatrix,
-  degree,
   poles,
+  # zeros = Base.zeros,
+  tzeros,
+  getmatrix,
   numvec,
   denvec,
   numpoly,
   denpoly,
-  zpkdata,
-  samplingtime,
   isdiscrete,
+  samplingtime,
+  zpkdata,
+  # Constructors
+  tf,
+  zpk,
+  ss,
+  mimo,
+  # Methods
+  series,
+  parallel,
+  feedback,
   rosenbrock,
   minreal
 
-# Polynomials package is needed
 using Polynomials
+using Compat
 
-include("abstract/ltisystem.jl")
-include("abstract/sisosystem.jl")
-include("abstract/sisotf.jl")
-include("abstract/csisotf.jl")
-include("abstract/dsisotf.jl")
-include("abstract/sisoss.jl")
-include("abstract/mimosystem.jl")
-include("concrete/dsisorational.jl")
-include("concrete/dsisozpk.jl")
-include("concrete/dmimo.jl")
-include("concrete/csisorational.jl")
-include("concrete/csisozpk.jl")
-include("concrete/cmimo.jl")
-include("concrete/csisoss.jl")
-include("concrete/dsisoss.jl")
-include("concrete/cmimoss.jl")
-include("concrete/dmimoss.jl")
+include("types/ltisystem.jl")
+include("types/rationaltf.jl")
+include("types/zeropolegain.jl")
+include("types/statespace.jl")
+include("types/generalmimo.jl")
 include("display.jl")
-include("interconnections.jl")
-include("conversions.jl")
+include("interconnections/series.jl")
+include("interconnections/parallel.jl")
+include("interconnections/feedback.jl")
 include("methods/rosenbrock.jl")
 include("methods/minreal.jl")
 include("methods/reduce.jl")
