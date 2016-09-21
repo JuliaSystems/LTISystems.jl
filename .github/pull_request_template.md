@@ -8,4 +8,4 @@ Short summary of the changes:
 
 ### Reference
 
-Fixes # .
+Fixes #issue_number.
