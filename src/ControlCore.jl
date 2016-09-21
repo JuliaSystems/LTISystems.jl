@@ -52,6 +52,7 @@ export
 
 using Polynomials
 using Compat
+import Compat.view
 
 include("types/ltisystem.jl")
 include("types/rationaltf.jl")

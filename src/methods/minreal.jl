@@ -83,11 +83,20 @@ function minreal{M1<:AbstractMatrix,M2<:AbstractMatrix,M3<:AbstractMatrix,
   return Am, Bm, Cm, D
 end
 
-minreal{T<:Union{CSisoSs,CMimoSs}}(sys::T,
-  tol::Float64 = zero(Float64)) = ss(minreal(sys.A,sys.B,sys.C,sys.D,tol)...)
+function minreal(s::StateSpace{Siso{true},Continuous{true}},
+  tol::Float64 = zero(Float64))
+  Am, Bm, Cm, Dm = minreal(s.A, s.B, s.C, s.D, tol)
+  ss(Am, Bm, Cm, Dm[1])
+end
 
-minreal{T<:Union{DSisoSs,DMimoSs}}(sys::T,
-  tol::Float64 = zero(Float64)) = ss(minreal(sys.A,sys.B,sys.C,sys.D,tol)...,sys.Ts)
+function minreal(s::StateSpace{Siso{true},Continuous{false}},
+  tol::Float64 = zero(Float64))
+  Am, Bm, Cm, Dm = minreal(s.A, s.B, s.C, s.D, tol)
+  ss(Am, Bm, Cm, Dm[1], s.Ts)
+end
 
-minreal{T<:LtiSystem}(sys::T, tol::Float64 = zero(Float64)) =
-  convert(T, minreal(ss(sys), tol))
+minreal(s::StateSpace{Siso{false},Continuous{true}},
+  tol::Float64 = zero(Float64)) = ss(minreal(s.A, s.B, s.C, s.D, tol)...)
+
+minreal(s::StateSpace{Siso{false},Continuous{false}},
+  tol::Float64 = zero(Float64)) = ss(minreal(s.A, s.B, s.C, s.D, tol)..., s.Ts)
