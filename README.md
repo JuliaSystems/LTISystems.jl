@@ -3,7 +3,7 @@
 Core functionality for **identifying**, **analyzing** and **designing** control
 systems in `Julia`.
 
-### Build Status and Code Coverate
+### Build Status and Code Coverage
 
 -  Build status: [![Build Status][build-img]][build-link]
 -  Code coverage: [![Coveralls][ca-img]][ca-link] [![Codecov][cc-img]][cc-link]
