@@ -1,62 +1,348 @@
 immutable RationalTF{T,S,M1,M2} <: LtiSystem{T,S}
   num::M1
   den::M2
+  nu::Int
+  ny::Int
   Ts::Float64
 
   # Continuous-time, single-input-single-output rational transfer function model
   @compat function (::Type{RationalTF}){M1<:Poly,M2<:Poly}(num::M1, den::M2)
-    @assert eltype(num) <: Real       "RationalTF: num must be a polynomial with real coefficients"
-    @assert eltype(den) <: Real       "RationalTF: den must be a polynomial with real coefficients"
-    @assert den != zero(den)          "RationalTF: den cannot be zero"
-    @assert degree(num) ≤ degree(den) "RationalTF: system is not proper"
-
-    new{Siso{true},Continuous{true},M1,M2}(num, den, zero(Float64))
+    n = fill(num,1,1)
+    d = fill(den,1,1)
+    ny, nu = tfcheck(n, d)
+    new{Siso{true},Continuous{true},M1,M2}(n, d, nu, ny, zero(Float64))
   end
 
   # Discrete-time, single-input-single-output rational transfer function model
-  @compat function (::Type{RationalTF}){M1<:Poly,M2<:Poly,M3<:Real}(num::M1,
-    den::M2, Ts::M3)
-    @assert eltype(num) <: Real         "RationalTF: num must be a polynomial with real coefficients"
-    @assert eltype(den) <: Real         "RationalTF: den must be a polynomial with real coefficients"
-    @assert den != zero(den)            "RationalTF: den cannot be zero"
-    @assert degree(num) ≤ degree(den)   "RationalTF: system is not proper"
-    @assert Ts ≥ zero(Ts) && !isinf(Ts) "StateSpace: Ts must be non-negative number"
-
-    new{Siso{true},Continuous{false},M1,M2}(num, den, convert(Float64, Ts))
+  @compat function (::Type{RationalTF}){M1<:Poly,M2<:Poly}(num::M1, den::M2, Ts::Real)
+    n = fill(num,1,1)
+    d = fill(den,1,1)
+    ny, nu = tfcheck(n, d, Ts)
+    new{Siso{true},Continuous{false},Matrix{M1},Matrix{M2}}(n, d, nu, ny,
+      convert(Float64, Ts))
   end
 
   # Continuous-time, multi-input-multi-output rational transfer function model
   @compat function (::Type{RationalTF}){M1<:AbstractMatrix,
     M2<:AbstractMatrix}(num::M1, den::M2)
-    @assert size(num) == size(den)    "RationalTF: num and den must have the same size"
-    @assert eltype(num) <: Poly &&
-      eltype(eltype(num)) <: Real     "RationalTF: num must be a matrix of polynomials with real coefficients"
-    @assert eltype(den) <: Poly &&
-      eltype(eltype(den)) <: Real     "RationalTF: den must be a matrix of polynomials with real coefficients"
-    for idx in eachindex(num)
-      @assert degree(num[idx]) ≤ degree(den[idx]) "RationalTF: system is not proper"
-      @assert den[idx] != zero(den[idx])          "RationalTF: den cannot be zero"
-    end
-
-    new{Siso{false},Continuous{true},M1,M2}(num, den, zero(Float64))
+    ny, nu = tfcheck(num, den)
+    new{Siso{false},Continuous{true},M1,M2}(num, den, nu, ny, zero(Float64))
   end
 
   # Discrete-time, multi-input-multi-output rational transfer function model
   @compat function (::Type{RationalTF}){M1<:AbstractMatrix,
-    M2<:AbstractMatrix,M3<:Real}(num::M1, den::M2, Ts::M3)
-    @assert size(num) == size(den)    "RationalTF: num and den must have the same size"
-    @assert eltype(num) <: Poly &&
-      eltype(eltype(num)) <: Real     "RationalTF: num must be a matrix of polynomials with real coefficients"
-    @assert eltype(den) <: Poly &&
-      eltype(eltype(den)) <: Real     "RationalTF: den must be a matrix of polynomials with real coefficients"
-    for idx in eachindex(num)
-      @assert degree(num[idx]) ≤ degree(den[idx]) "RationalTF: system is not proper"
-      @assert den[idx] != zero(den[idx])          "RationalTF: den cannot be zero"
-    end
-
-    new{Siso{false},Continuous{false},M1,M2}(num, den, convert(Float64, Ts))
+    M2<:AbstractMatrix}(num::M1, den::M2, Ts::Real)
+    ny, nu = tfcheck(num, den, Ts)
+    new{Siso{false},Continuous{false},M1,M2}(num, den, nu, ny, convert(Float64, Ts))
   end
 end
+
+# Enforce rational transfer function type invariance
+function tfcheck(num::AbstractMatrix, den::AbstractMatrix, Ts::Real = zero(Float64))
+  @assert size(num) == size(den)    "RationalTF: size(num) ≠ size(den)"
+  @assert !isempty(num)             "RationalTF: min(nu, ny) = 0"
+  @assert eltype(num) <: Poly &&
+    eltype(eltype(num)) <: Real     "RationalTF: num polynomial(s) do not have real coefficients"
+  @assert eltype(den) <: Poly &&
+    eltype(eltype(den)) <: Real     "RationalTF: den polynomial(s) do not have real coefficients"
+  for idx in eachindex(num)
+    @assert degree(num[idx]) ≤ degree(den[idx]) "RationalTF: system is not proper"
+    @assert den[idx] != zero(den[idx])          "RationalTF: den polynomial(s) cannot be zero"
+  end
+  @assert Ts ≥ zero(Ts) && !isinf(Ts) "RationalTF: Ts must be non-negative real number"
+
+  return size(num)
+end
+
+# Outer constructors
+tf(num::Poly, den::Poly)            = RationalTF(num, den)
+tf(num::Poly, den::Poly, Ts::Real)  = RationalTF(num, den, Ts)
+
+tf(num::AbstractMatrix, den::AbstractMatrix)            = RationalTF(num, den)
+tf(num::AbstractMatrix, den::AbstractMatrix, Ts::Real)  = RationalTF(num, den, Ts)
+
+function tf{T1<:Real, T2<:Real}(num::AbstractVector{T1}, den::AbstractVector{T2})
+  numpoly = Poly(reverse(num), :s)
+  denpoly = Poly(reverse(den), :s)
+  RationalTF(numpoly, denpoly)
+end
+
+function tf{T1<:Real, T2<:Real}(num::AbstractVector{T1}, den::AbstractVector{T2},
+  Ts::Real)
+  numpoly = Poly(reverse(num), :z)
+  denpoly = Poly(reverse(den), :z)
+  RationalTF(numpoly, denpoly, Ts)
+end
+
+function tf{T1<:Real, T2<:Real}(num::AbstractVector{T1}, den::AbstractVector{T2},
+  Ts::Real, var::Symbol)
+  vars    = [:z̄,:q̄,:qinv,:zinv]
+  @assert var ∈ vars string("tf: var ∉ ", vars)
+
+  numlast         = findlast(num)
+  denlast         = findlast(den)
+  order           = max(numlast, denlast)
+  num_            = zeros(eltype(num), order)
+  num_[1:numlast] = num[1:numlast]
+  den_            = zeros(eltype(den), order)
+  den_[1:denlast] = den[1:denlast]
+
+  numpoly = Poly(reverse(num_), :z)
+  denpoly = Poly(reverse(den_), :z)
+  RationalTF(numpoly, denpoly, Ts)
+end
+
+# Interfaces
+isdiscrete{T,S}(s::RationalTF{T,Continuous{S}}) = !S
+
+samplingtime(s::RationalTF) = s.Ts
+
+# Think carefully about how to implement numstates
+numstates(s::RationalTF)    = numstates(ss(s))
+# Currently, we only allow for proper systems
+numstates(s::RationalTF{Siso{true}}) = degree(den[1])
+
+numinputs(s::RationalTF)    = s.nu
+numoutputs(s::RationalTF)   = s.ny
+
+# Dimension information
+ndims(s::RationalTF{Siso{true}})  = 1
+ndims(s::RationalTF{Siso{false}}) = 2
+size(s::RationalTF)               = size(s.num)
+size(s::RationalTF, dim::Int)     = size(s.num, dim)
+size(s::RationalTF, dims::Int...) = size(s.num, dims)
+
+# Iteration interface (meaningful only for MIMO systems)
+# TODO
+
+# Slicing (`getindex`) of MIMO systems
+# TODO
+
+# Printing functions
+summary(s::RationalTF{Siso{true},Continuous{true}})   =
+  string("tf(nx=", numstates(s), ")")
+summary(s::RationalTF{Siso{true},Continuous{false}})  =
+  string("tf(nx=", numstates(s), ",Ts=", s.Ts, ")")
+summary(s::RationalTF{Siso{false},Continuous{true}})  =
+  string("tf(nx=", numstates(s), ",nu=", s.nu, ",ny=", s.ny, ")")
+summary(s::RationalTF{Siso{false},Continuous{false}}) =
+  string("tf(nx=", numstates(s), ",nu=", s.nu, ",ny=", s.ny, ",Ts=", s.Ts, ")")
+
+showcompact(io::IO, s::RationalTF) = print(io, summary(s))
+
+function show{T}(io::IO, s::RationalTF{T,Continuous{true}})
+  # TODO
+end
+
+function show{T}(io::IO, s::RationalTF{T,Continuous{false}})
+  # TODO
+end
+
+function showall(io::IO, s::RationalTF)
+  # TODO
+end
+
+# Conversion and promotion
+promote_rule{T<:Real,S}(::Type{T}, ::Type{RationalTF{Siso{true},S}}) =
+  RationalTF{Siso{true},S}
+promote_rule{T<:AbstractMatrix,S}(::Type{T}, ::Type{RationalTF{Siso{false},S}}) =
+  RationalTF{Siso{false},S}
+
+convert(::Type{RationalTF{Siso{true},Continuous{true}}}, g::Real)             =
+  tf(g)
+convert(::Type{RationalTF{Siso{true},Continuous{false}}}, g::Real)            =
+  tf(g, zero(Float64))
+convert(::Type{RationalTF{Siso{false},Continuous{true}}}, g::AbstractMatrix)  =
+  tf(g)
+convert(::Type{RationalTF{Siso{false},Continuous{false}}}, g::AbstractMatrix) =
+  tf(g, zero(Float64))
+
+# Multiplicative and additive identities (meaningful only for SISO)
+one(::Type{RationalTF{Siso{true},Continuous{true}}})    =
+  tf(one(Int8))
+one(::Type{RationalTF{Siso{true},Continuous{false}}})   =
+  tf(one(Int8), zero(Float64))
+zero(::Type{RationalTF{Siso{true},Continuous{true}}})   =
+  tf(zero(Int8))
+zero(::Type{RationalTF{Siso{true},Continuous{false}}})  =
+  tf(zero(Int8), zero(Float64))
+
+one(s::RationalTF{Siso{true},Continuous{true}})   =
+  tf(one(eltype(s.num)), one(eltype(s.den)))
+one(s::RationalTF{Siso{true},Continuous{false}})  =
+  tf(one(eltype(s.num)), one(eltype(s.den)), zero(Float64))
+zero(s::RationalTF{Siso{true},Continuous{true}})  =
+  tf(zero(eltype(s.num)), one(eltype(s.den)))
+zero(s::RationalTF{Siso{true},Continuous{false}}) =
+  tf(zero(eltype(s.num)), one(eltype(s.den)), zero(Float64))
+
+# Inverse of a rational transfer function model
+function tfinv(s::RationalTF{Siso{true}})
+  @assert degree(num[1]) == degree(den[1]) "inv(sys): inverse is not a proper system"
+  return den, num
+end
+
+function tfinv(s::RationalTF{Siso{false}})
+  @assert s.ny == s.nu "inv(sys): s.ny ≠ s.nu"
+  # TODO
+  # return num, den
+end
+
+function inv(s::RationalTF{Siso{true},Continuous{true}})
+  num, den = tfinv(s)
+  tf(num[1], den[1])
+end
+
+function inv(s::RationalTF{Siso{true},Continuous{false}})
+  num, den = tfinv(s)
+  tf(num[1], den[1], s.Ts)
+end
+
+function inv(s::RationalTF{Siso{false},Continuous{true}})
+  num, den = tfinv(s)
+  tf(num, den)
+end
+
+function inv(s::RationalTF{Siso{false},Continuous{false}})
+  num, den = tfinv(s)
+  tf(num, den, s.Ts)
+end
+
+# Invariant zeros of a rational transfer function model
+function zeros(s::RationalTF)
+  # TODO
+end
+
+# Transmission zeros of a rational transfer function model
+tzeros(s::RationalTF) = zeros(minreal(s))
+
+# Poles of a rational transfer function model
+function poles(s::RationalTF)
+  # TODO
+end
+
+# Negative of a rational transfer function model
+-(s::RationalTF{Siso{true},Continuous{true}})   =
+  RationalTF(-s.num[1], s.den[1])
+-(s::RationalTF{Siso{true},Continuous{false}})  =
+  RationalTF(-s.num[1], s.den[1], s.Ts)
+-(s::RationalTF{Siso{false},Continuous{true}})  =
+  RationalTF(-s.num, s.den)
+-(s::RationalTF{Siso{false},Continuous{false}}) =
+  RationalTF(-s.num, s.den, s.Ts)
+
+# Addition
+function tfparallel{T1,T2,S}(s1::RationalTF{T1,S}, s2::RationalTF{T2,S})
+  @assert s1.Ts ≈ s2.Ts || s1.Ts == zero(Float64) ||
+    s2.Ts == zero(Float64) "parallel(s1,s2): Sampling time mismatch"
+  @assert size(s1) == size(s2) "parallel(s1,s2): size(s1) ≠ size(s2)"
+
+  # return num, den
+end
+
+function +(s1::RationalTF{Siso{true},Continuous{true}},
+  s2::RationalTF{Siso{true},Continuous{true}})
+  num, den = tfparallel(s1, s2)
+  RationalTF(num[1], den[1])
+end
+
+function +(s1::RationalTF{Siso{true},Continuous{false}},
+  s2::RationalTF{Siso{true},Continuous{false}})
+  num, den = tfparallel(s1, s2)
+  RationalTF(num[1], den[1], s1.Ts)
+end
+
+function +{T1,T2}(s1::RationalTF{T1,Continuous{true}},
+  s2::RationalTF{T2,Continuous{true}})
+  num, den = tfparallel(s1, s2)
+  RationalTF(num, den)
+end
+
+function +{T1,T2}(s1::RationalTF{T1,Continuous{false}},
+  s2::RationalTF{T2,Continuous{false}})
+  num, den = tfparallel(s1, s2)
+  RationalTF(num, den, s1.Ts)
+end
+
+.+(s1::RationalTF{Siso{true}}, s2::RationalTF{Siso{true}}) = +(s1, s2)
+
++{T}(s::RationalTF{T,Continuous{true}}, g)  = +(s, tf(g))
++{T}(s::RationalTF{T,Continuous{false}}, g) = +(s, tf(g, zero(Float64)))
++{T}(g, s::RationalTF{T,Continuous{true}})  = +(tf(g), s)
++{T}(g, s::RationalTF{T,Continuous{false}}) = +(tf(g, zero(Float64)), s)
+
+.+(s::RationalTF{Siso{true}}, g::Real)  = +(s, g)
+.+(g::Real, s::RationalTF{Siso{true}})  = +(g, s)
+
+# Subtraction
+-(s1::RationalTF, s2::RationalTF) = +(s1, -s2)
+
+.-(s1::RationalTF{Siso{true}}, s2::RationalTF{Siso{true}}) = -(s1, s2)
+
+-{T}(s::RationalTF{T,Continuous{true}}, g)  = -(s, tf(g))
+-{T}(s::RationalTF{T,Continuous{false}}, g) = -(s, tf(g, zero(Float64)))
+-{T}(g, s::RationalTF{T,Continuous{true}})  = -(tf(g), s)
+-{T}(g, s::RationalTF{T,Continuous{false}}) = -(tf(g, zero(Float64)), s)
+
+.-(s::RationalTF{Siso{true}}, g::Real)  = -(s, g)
+.-(g::Real, s::RationalTF{Siso{true}})  = -(g, s)
+
+# Multiplication
+function tfseries{T1,T2,S}(s1::RationalTF{T1,S}, s2::RationalTF{T2,S})
+  # Remark: s1*s2 implies u -> s2 -> s1 -> y
+  @assert s1.Ts ≈ s2.Ts || s1.Ts == zero(Float64) ||
+    s2.Ts == zero(Float64) "series(s1,s2): Sampling time mismatch"
+  @assert s1.nu == s2.ny "series(s1,s2): s1.nu ≠ s2.ny"
+
+  return num, den
+end
+
+function *(s1::RationalTF{Siso{true},Continuous{true}},
+  s2::RationalTF{Siso{true},Continuous{true}})
+  num, den = tfseries(s1, s2)
+  RationalTF(num[1], den[1])
+end
+
+function *(s1::RationalTF{Siso{true},Continuous{false}},
+  s2::RationalTF{Siso{true},Continuous{false}})
+  num, den = tfseries(s1, s2)
+  RationalTF(num[1], den[1], s1.Ts)
+end
+
+function *{T1,T2}(s1::RationalTF{T1,Continuous{true}},
+  s2::RationalTF{T2,Continuous{true}})
+  num, den = tfseries(s1, s2)
+  RationalTF(num, den)
+end
+
+function *{T1,T2}(s1::RationalTF{T1,Continuous{false}},
+  s2::RationalTF{T2,Continuous{false}})
+  num, den = tfseries(s1, s2)
+  RationalTF(num, den, s1.Ts)
+end
+
+.*(s1::RationalTF{Siso{true}}, s2::RationalTF{Siso{true}}) = *(s1, s2)
+
+*{T}(s::RationalTF{T,Continuous{true}}, g)  = *(s, tf(g))
+*{T}(s::RationalTF{T,Continuous{false}}, g) = *(s, tf(g, zero(Float64)))
+*{T}(g, s::RationalTF{T,Continuous{true}})  = *(tf(g), s)
+*{T}(g, s::RationalTF{T,Continuous{false}}) = *(tf(g, zero(Float64)), s)
+
+.*(s::RationalTF{Siso{true}}, g::Real)  = *(s, g)
+.*(g::Real, s::RationalTF{Siso{true}})  = *(g, s)
+
+# Division
+/(s1::RationalTF, s2::RationalTF) = *(s1, inv(s2))
+
+./(s1::RationalTF{Siso{true}}, s2::RationalTF{Siso{true}}) = /(s1, s2)
+
+/{T}(s::RationalTF{T,Continuous{true}}, g)  = /(s, tf(g))
+/{T}(s::RationalTF{T,Continuous{false}}, g) = /(s, tf(g, zero(Float64)))
+/{T}(g, s::RationalTF{T,Continuous{true}})  = /(tf(g), s)
+/{T}(g, s::RationalTF{T,Continuous{false}}) = /(tf(g, zero(Float64)), s)
+
+./(s::RationalTF{Siso{true}}, g::Real)  = /(s, g)
+./(g::Real, s::RationalTF{Siso{true}})  = /(g, s)
 
 # Legacy SisoTf
 # # Printing functions
@@ -122,17 +408,6 @@ end
 #
 # # creation of continuous rational transfer functions
 #
-# function tf{V1<:AbstractVector, V2<:AbstractVector}(num::V1, den::V2)
-#   @assert eltype(num) <: Number string("num must be vector of T<:Number elements")
-#   @assert eltype(den) <: Number string("den must be vector of T<:Number elements")
-#   pnum = Poly(num[end:-1:1])
-#   pden = Poly(den[end:-1:1])
-#   CSisoRational(pnum, pden)
-# end
-#
-# tf{T1<:Real, T2<:Real}(num::Poly{T1}, den::Poly{T2}) = CSisoRational(num, den)
-# tf{T1<:Real}(gain::T1) = CSisoRational(Poly([gain]), Poly([one(T1)]))
-#
 # # conversion and promotion
 #
 # promote_rule{T11,T12,T21,T22}(::Type{CSisoRational{T11,T12}},
@@ -145,13 +420,6 @@ end
 #   s::CSisoRational{T21,T22})                                   = s
 # convert{T<:Real}(::Type{CSisoRational}, x::T)                  = tf([x], [one(T)])
 #
-# # overloading identities
-#
-# zero(::Type{CSisoRational})       = tf([zero(Int8)], [one(Int8)])
-# zero(s::CSisoRational)            = tf([zero(Int8)], [one(Int8)])
-# one(::Type{CSisoRational})        = tf([one(Int8)], [one(Int8)])
-# one(s::CSisoRational)             = tf([one(Int8)], [one(Int8)])
-#
 # # interface implementation
 #
 # zeros(s::CSisoRational)           = convert(Vector{Complex{Float64}}, roots(s.num))
@@ -161,9 +429,6 @@ end
 # numpoly(s::CSisoRational)         = copy(s.num)
 # denpoly(s::CSisoRational)         = copy(s.den)
 # zpkdata(s::CSisoRational)         = (zeros(s), poles(s), s.num[end]/s.den[end])
-# samplingtime(s::CSisoRational)    = zero(Float64)
-# isdiscrete(s::CSisoRational)      = false
-# isdiscrete(::Type{CSisoRational}) = false
 #
 # # overload printing functions
 #
@@ -290,13 +555,6 @@ end
 #   s::DSisoRational{T21,T22})                                   = s
 # convert{T<:Real}(::Type{DSisoRational}, x::T)                  = tf([x], [one(T)], NaN64)
 #
-# # overloading identities
-#
-# zero(::Type{DSisoRational})       = tf([zero(Int8)], [one(Int8)], NaN64)
-# zero(s::DSisoRational)            = tf([zero(Int8)], [one(Int8)], NaN64)
-# one(::Type{DSisoRational})        = tf([one(Int8)], [one(Int8)], NaN64)
-# one(s::DSisoRational)             = tf([one(Int8)], [one(Int8)], NaN64)
-#
 # # interface implementation
 #
 # zeros(s::DSisoRational)           = convert(Vector{Complex{Float64}}, roots(s.num))
@@ -306,9 +564,6 @@ end
 # numpoly(s::DSisoRational)         = copy(s.num)
 # denpoly(s::DSisoRational)         = copy(s.den)
 # zpkdata(s::DSisoRational)         = (zeros(s), poles(s), s.num[end]/s.den[end])
-# samplingtime(s::DSisoRational)    = s.Ts
-# isdiscrete(s::DSisoRational)      = true
-# isdiscrete(::Type{DSisoRational}) = true
 #
 # # overload printing functions
 #

@@ -136,3 +136,14 @@ samplingtime{T}(s::LtiSystem{T,Continuous{false}})  = s.Ts::Float64
 # showcompact(io::IO, s::MimoSystem)  = print(io, summary(s))
 # show(io::IO, s::MimoSystem)         = print(io, summary(s))
 # showall(io::IO, s::MimoSystem)      = print(io, summary(s))
+
+# # Comparison of `LtiSystem`s
+# function ==(s1::LtiSystem, s2::LtiSystem)
+#   # TODO: Implement
+# end
+#
+# !=(s1::LtiSystem, s2::LtiSystem) = !(s1 == s2)
+#
+# function isapprox(s1::LtiSystem, s2::LtiSystem)
+#   # TODO: Implement
+# end
