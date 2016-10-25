@@ -10,7 +10,7 @@ immutable RationalTF{T,S,M1,M2} <: LtiSystem{T,S}
     n = fill(num,1,1)
     d = fill(den,1,1)
     ny, nu = tfcheck(n, d)
-    new{Siso{true},Continuous{true},M1,M2}(n, d, nu, ny, zero(Float64))
+    new{Siso{true},Continuous{true},Matrix{M1},Matrix{M2}}(n, d, nu, ny, zero(Float64))
   end
 
   # Discrete-time, single-input-single-output rational transfer function model
@@ -42,9 +42,9 @@ function tfcheck(num::AbstractMatrix, den::AbstractMatrix, Ts::Real = zero(Float
   @assert size(num) == size(den)    "RationalTF: size(num) ≠ size(den)"
   @assert !isempty(num)             "RationalTF: min(nu, ny) = 0"
   @assert eltype(num) <: Poly &&
-    eltype(eltype(num)) <: Real     "RationalTF: num polynomial(s) do not have real coefficients"
+    eltype(num[1]) <: Real     "RationalTF: num polynomial(s) do not have real coefficients"
   @assert eltype(den) <: Poly &&
-    eltype(eltype(den)) <: Real     "RationalTF: den polynomial(s) do not have real coefficients"
+    eltype(den[1]) <: Real     "RationalTF: den polynomial(s) do not have real coefficients"
   for idx in eachindex(num)
     @assert degree(num[idx]) ≤ degree(den[idx]) "RationalTF: system is not proper"
     @assert den[idx] != zero(den[idx])          "RationalTF: den polynomial(s) cannot be zero"

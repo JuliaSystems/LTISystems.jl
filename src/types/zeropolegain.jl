@@ -43,7 +43,7 @@ immutable ZeroPoleGain{T,S,M1,M2,M3} <: LtiSystem{T,S}
 
   # Discrete-time, multi-input-multi-output zero-pole-gain model
   @compat function (::Type{ZeroPoleGain}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix}(z::M1, p::M2, k::M3)
+    M3<:AbstractMatrix}(z::M1, p::M2, k::M3, Ts::Real)
     @assert size(z) == size(p) == size(k) "ZeroPoleGain: dimensions of z, p and k must match"
     @assert eltype(z) <: AbstractVector &&
       eltype(eltype(z)) <: Number "ZeroPoleGain: z must be a matrix of vectors of numbers"

@@ -122,10 +122,12 @@ size(s::StateSpace, dims::Int...) = size(s.D, dims)
 
 # Iteration interface (meaningful only for MIMO systems)
 done(s::StateSpace{Siso{false}}, state::Int)  = done(s.D, state)
+next(s::StateSpace{Siso{false}}, state::Int)  = (s[state], state+1)
 eltype{S,M1,M2,M3,M4}(::Type{StateSpace{Siso{false},S,M1,M2,M3,M4}}) =
   StateSpace{Siso{true},S,M1}
 length(s::StateSpace{Siso{false}})      = length(s.D)
 eachindex(s::StateSpace{Siso{false}})   = eachindex(s.D)
+start(s::StateSpace{Siso{false}})       = start(s.D)
 endof(s::StateSpace{Siso{false}})       = endof(s.D)
 
 # Slicing (`getindex`) of MIMO systems
@@ -178,7 +180,7 @@ function getindex(s::StateSpace{Siso{false},Continuous{true}}, rows, cols)
   ss(s.A, view(s.B, :, cols), view(s.C, rows, :), view(s.D, rows, cols))
 end
 
-function getindex(s::StateSpace{Siso{false},Continuous{true}}, rows, cols)
+function getindex(s::StateSpace{Siso{false},Continuous{false}}, rows, cols)
   @assert 1 ≤ min(rows...) ≤ max(rows...) ≤ s.ny "s[rows,cols]: rows out of bounds"
   @assert 1 ≤ min(cols...) ≤ max(cols...) ≤ s.nu "s[rows,cols]: cols out of bounds"
   ss(s.A, view(s.B, :, cols), view(s.C, rows, :), view(s.D, rows, cols), s.Ts)
