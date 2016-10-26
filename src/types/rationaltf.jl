@@ -209,6 +209,8 @@ function inv(s::RationalTF{Siso{false},Continuous{false}})
 end
 
 # Invariant zeros of a rational transfer function model
+zeros(s::RationalTF{Siso{true}}) = roots(s.num[1])
+
 function zeros(s::RationalTF)
   # TODO
 end
@@ -217,6 +219,8 @@ end
 tzeros(s::RationalTF) = zeros(minreal(s))
 
 # Poles of a rational transfer function model
+poles(s::RationalTF{Siso{true}}) = roots(s.den[1])
+
 function poles(s::RationalTF)
   # TODO
 end
