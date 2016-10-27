@@ -25,6 +25,8 @@ show(io::IO, s::LtiSystem)            = print(io, summary(s))
 showall(io::IO, s::LtiSystem)         = print(io, summary(s))
 
 # Sampling time related functions
+issiso{T}(::LtiSystem{Siso{T}})                     = T::Bool
+ismimo{T}(::LtiSystem{Siso{T}})                     = !T::Bool
 iscontinuous{T,S}(::LtiSystem{T,Continuous{S}})     = S::Bool
 isdiscrete{T,S}(::LtiSystem{T,Continuous{S}})       = !S::Bool
 samplingtime{T}(::LtiSystem{T,Continuous{true}})    = zero(Float64)
