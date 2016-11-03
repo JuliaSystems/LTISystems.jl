@@ -310,11 +310,11 @@ function zeros(s::StateSpace)
 
   if mrc == 0
     zerovalues = eigfact(Af).values
-    return zerovalues::Vector{Complex{Float64}}
+    return zerovalues
   else
     Bf    = W[1:nrc,1:nrc]
     zerovalues = eigfact(Af, Bf).values
-    return zerovalues::Vector{Complex{Float64}}
+    return zerovalues
   end
 end
 
@@ -324,7 +324,7 @@ tzeros(s::StateSpace) = zeros(minreal(s))
 # Poles of a state-space model
 function poles(s::StateSpace)
   Am, Bm, Cm, Dm, = minreal(s.A, s.B, s.C, s.D)
-  return eigfact(Am).values::Vector{Complex{Float64}}
+  return eigfact(Am).values
 end
 
 # Negative of a state-space model
