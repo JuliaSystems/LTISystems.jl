@@ -38,7 +38,7 @@ function reduce{M1<:AbstractMatrix, M2<:AbstractMatrix, M3<:AbstractMatrix,
     D̄       = temp2[1:σ₂, n4+1:end]
 
     if τ ≠ 0
-      svdobj  = svdfact(sub(temp2, σ₂+1:n3, 1:n4), thin = false)
+      svdobj  = svdfact(view(temp2, σ₂+1:n3, 1:n4), thin = false)
       ρ       = sum(svdobj.S .>= tol)
       ν₂      = n4 - ρ
 

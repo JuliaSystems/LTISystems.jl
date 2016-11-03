@@ -81,8 +81,8 @@ function rosenbrock{M1<:AbstractMatrix,M2<:AbstractMatrix}(A::M1, B::M2,
 
     if ρ₂ != 0 && τ₂ != 0
       Atemp   = U'*Atemp*U
-      Btemp   = sub(Atemp, 1:τ₂, τ₂+1:n)
-      Atemp   = sub(Atemp, 1:τ₂, 1:τ₂)
+      Btemp   = view(Atemp, 1:τ₂, τ₂+1:n)
+      Atemp   = view(Atemp, 1:τ₂, 1:τ₂)
       T[:]    = T*vcat(hcat(U, zeros(size(U, 1),c)),
                         hcat(zeros(c, size(U, 2)), eye(c)))
 

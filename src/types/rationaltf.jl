@@ -38,13 +38,9 @@ immutable RationalTF{T,S,M1,M2} <: LtiSystem{T,S}
 end
 
 # Enforce rational transfer function type invariance
-function tfcheck(num::AbstractMatrix, den::AbstractMatrix, Ts::Real = zero(Float64))
+function tfcheck{T<:Real}(num::AbstractMatrix{Poly{T}}, den::AbstractMatrix{Poly{T}}, Ts::Real = zero(Float64))
   @assert size(num) == size(den)    "RationalTF: size(num) ≠ size(den)"
   @assert !isempty(num)             "RationalTF: min(nu, ny) = 0"
-  @assert eltype(num) <: Poly &&
-    eltype(num[1]) <: Real     "RationalTF: num polynomial(s) do not have real coefficients"
-  @assert eltype(den) <: Poly &&
-    eltype(den[1]) <: Real     "RationalTF: den polynomial(s) do not have real coefficients"
   for idx in eachindex(num)
     @assert degree(num[idx]) ≤ degree(den[idx]) "RationalTF: system is not proper"
     @assert den[idx] != zero(den[idx])          "RationalTF: den polynomial(s) cannot be zero"
@@ -53,6 +49,11 @@ function tfcheck(num::AbstractMatrix, den::AbstractMatrix, Ts::Real = zero(Float
 
   return size(num)
 end
+
+function tfcheck(num::AbstractMatrix, den::AbstractMatrix, Ts::Real = zero(Float64))
+  error("RationalTF: num polynomial(s) do not have real coefficients")
+end
+
 
 # Outer constructors
 tf(num::Poly, den::Poly)            = RationalTF(num, den)

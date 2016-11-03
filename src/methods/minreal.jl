@@ -74,7 +74,7 @@ function minreal{M1<:AbstractMatrix,M2<:AbstractMatrix,M3<:AbstractMatrix,
   CTemp = (C*Tc)[:,n-c+1:n]
   To, o = rosenbrock(ATemp.', CTemp.', tol)
 
-  T     = sub(Tc, :, n-c+1:n)*To
+  T     = view(Tc, :, n-c+1:n)*To
 
   Am    = (T'*A*T)[c-o+1:c,c-o+1:c]
   Bm    = (T'*B)[c-o+1:c,:]
