@@ -7,6 +7,7 @@ Short description of the bug/feature request.
 Short description of the expected behaviour.
 
 Some small `julia` code excerpt:
+
 ```julia
 # some code
 # some output
@@ -19,6 +20,7 @@ Some small `julia` code excerpt:
 Short description of the observed behaviour.
 
 Some small `julia` code excerpt:
+
 ```julia
 # some code
 # some output

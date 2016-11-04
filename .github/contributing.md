@@ -65,7 +65,7 @@ Fixes #issue_number.
 
 Since the commits in `git` already show the differences that are made, it would
 help if we summarized the changes in simple words together with the intuitions
-behind them. Using the `Fixes #issue_number.` in the end is useful to fix the
+behind them. Using the `Fixes #issue_number.` in the end is useful to close the
 corresponding issue automatically upon a successful merge.
 
 [conv-devel]: https://youtu.be/iV7mVGPXrxU?t=16m25s
