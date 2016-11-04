@@ -28,7 +28,7 @@ export
   numinputs,
   numoutputs,
   poles,
-  # zeros = Base.zeros,
+  zeros,
   tzeros,
   getmatrix,
   numvec,
@@ -51,7 +51,9 @@ export
   parallel,
   feedback,
   rosenbrock,
-  minreal
+  minreal,
+  freqresp,
+  evalfr
 
 using Polynomials
 using Compat
@@ -69,5 +71,6 @@ include("types/generalmimo.jl")
 include("methods/rosenbrock.jl")
 include("methods/minreal.jl")
 include("methods/reduce.jl")
+include("plotting/freqresp.jl")
 
 end # module
