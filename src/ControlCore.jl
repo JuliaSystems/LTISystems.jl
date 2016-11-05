@@ -56,21 +56,34 @@ export
   evalfr
 
 using Polynomials
+using RecipesBase
 using Compat
 import Compat.view
 
-include("types/ltisystem.jl")
-include("types/rationaltf.jl")
-include("types/zeropolegain.jl")
-include("types/statespace.jl")
-include("types/generalmimo.jl")
+# System types
+include("types/system/ltisystem.jl")
+include("types/system/rationaltf.jl")
+include("types/system/zeropolegain.jl")
+include("types/system/statespace.jl")
+include("types/system/generalmimo.jl")
 #include("display.jl")
+
+# Response types
+include("types/response/systemresponse.jl")
+include("types/response/boderesponse.jl")
+include("types/response/nyquistresponse.jl")
+
+# Interconnections
 #include("interconnections/series.jl")
 #include("interconnections/parallel.jl")
 #include("interconnections/feedback.jl")
+
+# Methods
 include("methods/rosenbrock.jl")
 include("methods/minreal.jl")
 include("methods/reduce.jl")
-include("plotting/freqresp.jl")
+include("methods/freqresp.jl")
+include("methods/bode.jl")
+include("methods/nyquist.jl")
 
 end # module
