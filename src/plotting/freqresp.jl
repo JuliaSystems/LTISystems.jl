@@ -22,10 +22,11 @@ Evaluate the frequency response
 
 of system `sys` at the complex value or vector `s`.
 """
-evalfr(sys::StateSpace{Siso{true}}, s::Number) = _evalfr(sys,s)[1]
-evalfr(sys::StateSpace{Siso{false}}, s::Number) = _evalfr(sys,s)
+evalfr(sys::LtiSystem{Siso{true}}, s::Number) = _evalfr(sys,s)[1]
+evalfr(sys::LtiSystem{Siso{false}}, s::Number) = _evalfr(sys,s)
 evalfr{M<:Number}(sys::LtiSystem{Siso{true}}, s::AbstractVector{M}) = _evalfr(sys,s)[1,1,:]
 evalfr{M<:Number}(sys::LtiSystem{Siso{false}}, s::AbstractVector{M}) = _evalfr(sys,s)
+evalfr(mat::AbstractMatrix, s::Number) = map(sys -> evalfr(sys, s), mat)
 
 # Implements algorithm found in:
 # Laub, A.J., "Efficient Multivariable Frequency Response Computations",
@@ -59,7 +60,7 @@ function _evalfr{M<:Number}(sys::StateSpace, s::AbstractVector{M})
   resp
 end
 
-function evalfr{M<:Number}(sys::LtiSystem, s::AbstractVector{M})
+function _evalfr{M<:Number}(sys::LtiSystem, s::AbstractVector{M})
   ny, nu = size(sys)
   nw = length(s)
   resp = Array(Complex128, ny, nu, nw)
@@ -75,7 +76,7 @@ function _evalfr(sys::StateSpace, s::Number)
   sys.D + sys.C*((R\sys.B)::Matrix{S})
 end
 
-function evalfr(sys::RationalTF{Siso{true}}, s::Number)
+function _evalfr(sys::RationalTF{Siso{true}}, s::Number)
   S = promote_type(typeof(s), Float64)
   den = polyval(sys.den[1], s)
   if den == zero(S)
@@ -84,7 +85,7 @@ function evalfr(sys::RationalTF{Siso{true}}, s::Number)
     polyval(sys.num[1], s)/den
   end
 end
-function evalfr(sys::RationalTF, s::Number)
+function _evalfr(sys::RationalTF, s::Number)
   S = promote_type(typeof(s), Float64)
   ny, nu = size(sys)
   res = Array(S, ny, nu)
@@ -95,8 +96,6 @@ function evalfr(sys::RationalTF, s::Number)
   end
   return res
 end
-
-evalfr(mat::AbstractMatrix, s::Number) = map(sys -> evalfr(sys, s), mat)
 
 # `F(s)`
 # Notation for frequency response evaluation:
