@@ -51,7 +51,7 @@ function tfcheck{T<:Real}(num::AbstractMatrix{Poly{T}}, den::AbstractMatrix{Poly
 end
 
 function tfcheck(num::AbstractMatrix, den::AbstractMatrix, Ts::Real = zero(Float64))
-  error("RationalTF: num polynomial(s) do not have real coefficients")
+  error("RationalTF: num and den should contain polynomials with real coefficients")
 end
 
 
