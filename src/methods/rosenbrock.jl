@@ -63,8 +63,8 @@ function rosenbrock{M1<:AbstractMatrix,M2<:AbstractMatrix}(A::M1, B::M2,
   tol::Float64 = zero(Float64))
   n1, n2  = size(A,1,2)
   n3, n4  = size(B,1,2)
-  @assert n1 == n2 string("rosenbrock: A must be square")
-  @assert n1 == n3 string("rosenbrock: A and B must have same row sizes")
+  @assert n1 == n2 "rosenbrock: A must be square"
+  @assert n1 == n3 "rosenbrock: A and B must have same row sizes"
   c::Int              = 0
   T::Matrix{Float64}  = eye(n1)
   τ₁, τ₂  = (n1,1)

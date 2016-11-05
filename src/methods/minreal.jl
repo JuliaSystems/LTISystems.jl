@@ -62,11 +62,11 @@ julia> Dm
 """
 function minreal{M1<:AbstractMatrix,M2<:AbstractMatrix,M3<:AbstractMatrix,
   M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, tol::Float64 = zero(Float64))
-  @assert size(A,1) == size(A,2) string("minreal: A must be square")
-  @assert size(A,1) == size(B,1) string("minreal: A and B must have the same row size")
-  @assert size(A,1) == size(C,2) string("minreal: A and C must have the same column size")
-  @assert size(B,2) == size(D,2) string("minreal: B and D must have the same column size")
-  @assert size(C,1) == size(D,1) string("minreal: C and D must have the same row size")
+  @assert size(A,1) == size(A,2) "minreal: A must be square"
+  @assert size(A,1) == size(B,1) "minreal: A and B must have the same row size"
+  @assert size(A,1) == size(C,2) "minreal: A and C must have the same column size"
+  @assert size(B,2) == size(D,2) "minreal: B and D must have the same column size"
+  @assert size(C,1) == size(D,1) "minreal: C and D must have the same row size"
 
   n     = size(A,1)
   Tc, c = rosenbrock(A, B, tol)

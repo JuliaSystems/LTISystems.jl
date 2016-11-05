@@ -1,10 +1,10 @@
 function reduce{M1<:AbstractMatrix, M2<:AbstractMatrix, M3<:AbstractMatrix,
   M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, tol::Float64 = zero(Float64))
-  @assert size(A,1) == size(A,2) string("reduce: A must be square")
-  @assert size(A,1) == size(B,1) string("reduce: A and B must have the same row size")
-  @assert size(A,1) == size(C,2) string("reduce: A and C must have the same column size")
-  @assert size(B,2) == size(D,2) string("reduce: B and D must have the same column size")
-  @assert size(C,1) == size(D,1) string("reduce: C and D must have the same row size")
+  @assert size(A,1) == size(A,2) "reduce: A must be square"
+  @assert size(A,1) == size(B,1) "reduce: A and B must have the same row size"
+  @assert size(A,1) == size(C,2) "reduce: A and C must have the same column size"
+  @assert size(B,2) == size(D,2) "reduce: B and D must have the same column size"
+  @assert size(C,1) == size(D,1) "reduce: C and D must have the same row size"
 
   n1, n2  = size(B,1,2)
   n3, n4  = size(C,1,2)
