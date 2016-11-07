@@ -46,11 +46,11 @@ function _evalfr{M<:Number}(sys::StateSpace, s::AbstractVector{M})
 
   resp = Array(Complex128, ny, nu, nw)
   for i = 1:nw
-    R = s[i]*eye(sys.nx) - Ah
+    R = s[i]*speye(sys.nx) - Ah
     ipiv, info = luhessfact!(R)
     if info > 0
       # s[i] is a pole of the system
-      resp[:, :, i] = D + Ch*((s[i]*eye(sys.nx) - Ah)\Bh)
+      resp[:, :, i] = D + Ch*((s[i]*speye(sys.nx) - Ah)\Bh)
     else
       temp = copy(Bh)
       hesssolve!(R,ipiv,temp)
@@ -72,7 +72,7 @@ end
 
 function _evalfr(sys::StateSpace, s::Number)
   S = promote_type(typeof(s), Float64)
-  R = Diagonal(S[s for i=1:sys.nx]) - sys.A
+  R = s[i]*speye(sys.nx) - sys.A
   sys.D + sys.C*((R\sys.B)::Matrix{S})
 end
 
