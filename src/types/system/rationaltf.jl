@@ -94,8 +94,6 @@ function tf{T1<:Real, T2<:Real}(num::AbstractVector{T1}, den::AbstractVector{T2}
 end
 
 # Interfaces
-isdiscrete{T,S}(s::RationalTF{T,Continuous{S}}) = !S
-
 samplingtime(s::RationalTF) = s.Ts
 
 # Think carefully about how to implement numstates
