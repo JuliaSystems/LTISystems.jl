@@ -33,9 +33,35 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
     new{Siso{false},Continuous{true},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
       zero(Float64))
   end
+  @compat function (::Type{StateSpace{Siso{true}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
+    @assert size(D) == (1,1) "StateSpace: The system should be SISO"
+    nx, nu, ny = sscheck(A, B, C, D)
+    new{Siso{true},Continuous{true},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
+      zero(Float64))
+  end
+  @compat function (::Type{StateSpace{Siso{false}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
+    nx, nu, ny = sscheck(A, B, C, D)
+    new{Siso{false},Continuous{true},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
+      zero(Float64))
+  end
 
   # Discrete-time, multi-input-multi-output state-space model
   @compat function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
+    nx, nu, ny = sscheck(A, B, C, D, Ts)
+    new{Siso{false},Continuous{false},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
+      convert(Float64, Ts))
+  end
+  @compat function (::Type{StateSpace{Siso{true}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
+    @assert size(D) == (1,1) "StateSpace: The system should be SISO"
+    nx, nu, ny = sscheck(A, B, C, D, Ts)
+    new{Siso{true},Continuous{false},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
+      convert(Float64, Ts))
+  end
+  @compat function (::Type{StateSpace{Siso{false}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
     M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
     nx, nu, ny = sscheck(A, B, C, D, Ts)
     new{Siso{false},Continuous{false},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
