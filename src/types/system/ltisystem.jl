@@ -24,6 +24,9 @@ isdiscrete{T,S}(::LtiSystem{T,Continuous{S}})       = !S::Bool
 samplingtime{T}(::LtiSystem{T,Continuous{true}})    = zero(Float64)
 samplingtime{T}(s::LtiSystem{T,Continuous{false}})  = s.Ts::Float64
 
+sisotype{T}(s::LtiSystem{T})           = T
+continuoustype{T,S}(s::LtiSystem{T,S}) = S
+
 # Legacy SISO system
 # abstract SisoSystem{T<:Real} <: LtiSystem
 #
