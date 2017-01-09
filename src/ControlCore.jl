@@ -76,6 +76,9 @@ include("types/system/generalmimo.jl")
 include("types/system/mfd.jl")
 #include("display.jl")
 
+# Conversions
+include("conversions/mfd2ss.jl")
+
 # Response types
 include("types/response/systemresponse.jl")
 include("types/response/boderesponse.jl")

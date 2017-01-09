@@ -2,6 +2,7 @@
 immutable Lfd{T}
 end
 
+# NOTE: Should SISO MFDs be based on 1x1 polynomial matrices (similarly to `RationalTF`)?
 immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   N::M1
   D::M2
@@ -24,14 +25,14 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   # Continuous-time, multi-input-multi-output MFD model
   @compat function (::Type{MFD}){M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, T::Bool)
-    ny, nu = T ? mfdcheck(N, D) : mfdcheck(D, N)
+    ny, nu = T ? mfdcheck(N, D) : mfdcheck(N', D')
     new{Siso{false},Continuous{true},Lfd{T},M1,M2}(N, D, nu, ny, zero(Float64))
   end
 
   # Discrete-time, multi-input-multi-output MFD model
   @compat function (::Type{MFD}){M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, Ts::Real, T::Bool)
-    ny, nu = T ? mfdcheck(N, D, Ts) : mfdcheck(D, N, Ts)
+    ny, nu = T ? mfdcheck(N, D, Ts) : mfdcheck(N', D', Ts)
     new{Siso{false},Continuous{false},Lfd{T},M1,M2}(N, D, nu, ny, convert(Float64, Ts))
   end
 
@@ -44,7 +45,7 @@ end
 # Enforce rational transfer function type invariance
 function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
   N::M1, D::M2, Ts::Real = zero(Float64))
-  @assert size(N,1) == size(D,2) "MFD: size(N,1) ≠ size(D,2)"
+  @assert size(N,1) == size(D,2) "MFD: N and D do not have compatible dimensions"
   @assert size(D,1) == size(D,2) "MFD: size(D,1) ≠ size(D,2)"
   @assert Ts ≥ zero(Ts) && !isinf(Ts) "MFD: Ts must be non-negative real number"
 
@@ -159,9 +160,6 @@ promote_rule{T<:Real,S}(::Type{T}, ::Type{MFD{Siso{true},S}}) =
   MFD{Siso{true},S}
 promote_rule{T<:AbstractMatrix,S}(::Type{T}, ::Type{MFD{Siso{false},S}}) =
   MFD{Siso{false},S}
-
-promote_rule{T<:AbstractMatrix,S}(::Type{T}, ::Type{MFD{Siso{false},S}}) =
-    MFD{Siso{false},S}
 
 convert(::Type{RationalTF{Siso{true},Continuous{true}}},
   s::MFD{Siso{true},Continuous{true}}) = tf(s.N, s.D)
