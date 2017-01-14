@@ -11,29 +11,29 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   Ts::Float64
 
   # Continuous-time, single-input-single-output MFD model
-  @compat function (::Type{MFD}){M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, T::Bool)
+  @compat function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, ::Type{Lfd{L}})
     mfdcheck(N,D)
-    new{Siso{true},Continuous{true},Lfd{T},M1,M2}(N, D, 1, 1, zero(Float64))
+    new{Siso{true},Continuous{true},Lfd{L},M1,M2}(N, D, 1, 1, zero(Float64))
   end
 
   # Discrete-time, single-input-single-output MFD model
-  @compat function (::Type{MFD}){M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, Ts::Real, T::Bool)
+  @compat function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, Ts::Real, ::Type{Lfd{L}})
     mfdcheck(N,D,Ts)
-    new{Siso{true},Continuous{false},Lfd{T},M1,M2}(N, D, 1, 1, convert(Float64, Ts))
+    new{Siso{true},Continuous{false},Lfd{L},M1,M2}(N, D, 1, 1, convert(Float64, Ts))
   end
 
   # Continuous-time, multi-input-multi-output MFD model
-  @compat function (::Type{MFD}){M1<:PolynomialMatrices.PolyMatrix,
-    M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, T::Bool)
-    ny, nu = T ? mfdcheck(N, D) : mfdcheck(N', D')
-    new{Siso{false},Continuous{true},Lfd{T},M1,M2}(N, D, nu, ny, zero(Float64))
+  @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
+    M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, ::Type{Lfd{L}})
+    ny, nu = mfdcheck(N, D, Lfd{L})
+    new{Siso{false},Continuous{true},Lfd{L},M1,M2}(N, D, nu, ny, zero(Float64))
   end
 
   # Discrete-time, multi-input-multi-output MFD model
-  @compat function (::Type{MFD}){M1<:PolynomialMatrices.PolyMatrix,
-    M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, Ts::Real, T::Bool)
-    ny, nu = T ? mfdcheck(N, D, Ts) : mfdcheck(N', D', Ts)
-    new{Siso{false},Continuous{false},Lfd{T},M1,M2}(N, D, nu, ny, convert(Float64, Ts))
+  @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
+    M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, Ts::Real, ::Type{Lfd{L}})
+    ny, nu = mfdcheck(N, D, Lfd{L}, Ts)
+    new{Siso{false},Continuous{false},Lfd{L},M1,M2}(N, D, nu, ny, convert(Float64, Ts))
   end
 
 end
@@ -44,26 +44,37 @@ end
 
 # Enforce rational transfer function type invariance
 function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
-  N::M1, D::M2, Ts::Real = zero(Float64))
-  @assert size(N,1) == size(D,2) "MFD: N and D do not have compatible dimensions"
+  N::M1, D::M2, ::Type{Lfd{true}})
+  @assert size(N,1) == size(D,1) "MFD: size(N,1) ≠ size(D,1)"
   @assert size(D,1) == size(D,2) "MFD: size(D,1) ≠ size(D,2)"
-  @assert Ts ≥ zero(Ts) && !isinf(Ts) "MFD: Ts must be non-negative real number"
 
-  return size(N,1), size(D,2)
+  return size(N,1), size(D,1)
+end
+function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
+  N::M1, D::M2, ::Type{Lfd{false}})
+  @assert size(N,2) == size(D,2) "MFD: size(N,2) ≠ size(D,2)"
+  @assert size(D,1) == size(D,2) "MFD: size(D,1) ≠ size(D,2)"
+
+  return size(N,2), size(D,2)
+end
+function mfdcheck{T<:Bool,M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
+  N::M1, D::M2, ::Type{Lfd{T}}, Ts::Real)
+  @assert Ts ≥ zero(Ts) && !isinf(Ts) "MFD: Ts must be non-negative real number"
+  return mfdcheck(N, D, Lfd{T})
 end
 
 # Outer constructors
-lfd(N::Poly, D::Poly)           = MFD(N, D, true)
-lfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), true)
+lfd(N::Poly, D::Poly)           = MFD(N, D, Lfd{true})
+lfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), Lfd{true})
 lfd{M1<:PolyMatrix,M2<:PolyMatrix}(N::M1, D::M2) =
-  MFD(N, D, true)
+  MFD(N, D, Lfd{true})
 lfd{M1<:PolyMatrix,M2<:PolyMatrix}(N::M1, D::M2, Ts::Real) =
-  MFD(N, D, convert(Float64, Ts), true)
+  MFD(N, D, convert(Float64, Ts), Lfd{true})
 
-rfd(N::Poly, D::Poly) = MFD(N, D, false)
-rfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), false)
-rfd(N::PolyMatrix, D::PolyMatrix) = MFD(N, D, false)
-rfd(N::PolyMatrix, D::PolyMatrix, Ts::Real) = MFD(N, D, false)
+rfd(N::Poly, D::Poly) = MFD(N, D, Lfd{false})
+rfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), Lfd{false})
+rfd(N::PolyMatrix, D::PolyMatrix) = MFD(N, D, Lfd{false})
+rfd(N::PolyMatrix, D::PolyMatrix, Ts::Real) = MFD(N, D, convert(Float64, Ts), Lfd{false})
 
 # Vector constructors
 lfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2}) =
@@ -109,6 +120,8 @@ end
 
 # Interfaces
 samplingtime(s::MFD) = s.Ts
+islfd{T,S,L}(s::MFD{T,S,Lfd{L}}) = L::Bool
+isrfd{T,S,L}(s::MFD{T,S,Lfd{L}}) = !L::Bool
 
 # Think carefully about how to implement numstates
 numstates(s::MFD)    = 1#numstates(ss(s))

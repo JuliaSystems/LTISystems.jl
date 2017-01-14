@@ -51,6 +51,8 @@ export
   lfd,
   rfd,
   # Methods
+  islfd,
+  isrfd,
   series,
   parallel,
   feedback,
