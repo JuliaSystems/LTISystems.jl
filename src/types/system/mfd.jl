@@ -48,14 +48,14 @@ function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyM
   @assert size(N,1) == size(D,1) "MFD: size(N,1) ≠ size(D,1)"
   @assert size(D,1) == size(D,2) "MFD: size(D,1) ≠ size(D,2)"
 
-  return size(N,1), size(D,1)
+  return size(N,1), size(N,2)
 end
 function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
   N::M1, D::M2, ::Type{Lfd{false}})
   @assert size(N,2) == size(D,2) "MFD: size(N,2) ≠ size(D,2)"
   @assert size(D,1) == size(D,2) "MFD: size(D,1) ≠ size(D,2)"
 
-  return size(N,2), size(D,2)
+  return size(N,1), size(N,2)
 end
 function mfdcheck{T<:Bool,M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
   N::M1, D::M2, ::Type{Lfd{T}}, Ts::Real)
