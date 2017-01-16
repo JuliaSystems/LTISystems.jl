@@ -1,6 +1,7 @@
 using SystemsBase
 using Base.Test
 using PolynomialMatrices
+using Polynomials
 
 # continuous state space type tests
 #include("continuousss.jl")
