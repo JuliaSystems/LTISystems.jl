@@ -70,7 +70,7 @@ function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyM
 
   return size(N,1), size(N,2)
 end
-function mfdcheck{T<:Bool,M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
+function mfdcheck{T,M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
   N::M1, D::M2, ::Type{Lfd{T}}, Ts::Real)
   @assert Ts ≥ zero(Ts) && !isinf(Ts) "MFD: Ts must be non-negative real number"
   return mfdcheck(N, D, Lfd{T})
