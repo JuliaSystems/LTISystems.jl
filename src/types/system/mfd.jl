@@ -2,7 +2,20 @@
 immutable Lfd{T}
 end
 
+# Parameters:
+#   T:  Siso{true} or Siso{false}
+#   S:  Continuous{true} or Continuous{false}
+#   L:  Lfd{true} or Lfd{false}
+#   M1: Type of numerator polynomial matrix
+#   M2: Type of denominator polynomial matrix
+#   N:  Numerator polynomial matrix
+#   D:  Denominator polynomial matrix
+#   nu: Number of inputs
+#   ny: Number of outputs
+#   Ts: Sampling time (= zero(Float64) for continuous-time systems)
+#
 # NOTE: Should SISO MFDs be based on 1x1 polynomial matrices (similarly to `RationalTF`)?
+# NOTE: Should the constructors verify that D is nonsingular and that the MFD is proper?
 immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   N::M1
   D::M2
@@ -122,6 +135,8 @@ end
 samplingtime(s::MFD) = s.Ts
 islfd{T,S,L}(s::MFD{T,S,Lfd{L}}) = L::Bool
 isrfd{T,S,L}(s::MFD{T,S,Lfd{L}}) = !L::Bool
+num(s::MFD) = s.N
+den(s::MFD) = s.D
 
 # Think carefully about how to implement numstates
 numstates(s::MFD)    = 1#numstates(ss(s))

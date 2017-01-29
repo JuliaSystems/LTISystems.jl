@@ -43,6 +43,10 @@ export
   isdiscrete,
   samplingtime,
   zpkdata,
+  islfd,
+  isrfd,
+  num,
+  den,
   # Constructors
   tf,
   zpk,
@@ -51,8 +55,6 @@ export
   lfd,
   rfd,
   # Methods
-  islfd,
-  isrfd,
   series,
   parallel,
   feedback,
@@ -80,6 +82,7 @@ include("types/system/mfd.jl")
 
 # Conversions
 include("conversions/mfd2ss.jl")
+include("conversions/ss2mfd.jl")
 
 # Response types
 include("types/response/systemresponse.jl")
