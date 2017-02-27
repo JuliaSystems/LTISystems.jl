@@ -16,18 +16,18 @@ show(s1)
 showall(s1)
 showcompact(s1)
 
-@test typeof(s1)     == ControlCore.DSisoRational{Int,Int}
-@test typeof(s2)     == ControlCore.DSisoRational{Int,Float64}
-@test typeof(s3)     == ControlCore.DSisoRational{Float64,Float64}
-@test typeof(s4)     == ControlCore.DSisoRational{Float64,Float64}
-@test typeof(s5)     == ControlCore.DSisoRational{Rational{Int},Int}
-@test typeof(s6)     == ControlCore.DSisoRational{Int,Int}
+@test typeof(s1)     == SystemsBase.DSisoRational{Int,Int}
+@test typeof(s2)     == SystemsBase.DSisoRational{Int,Float64}
+@test typeof(s3)     == SystemsBase.DSisoRational{Float64,Float64}
+@test typeof(s4)     == SystemsBase.DSisoRational{Float64,Float64}
+@test typeof(s5)     == SystemsBase.DSisoRational{Rational{Int},Int}
+@test typeof(s6)     == SystemsBase.DSisoRational{Int,Int}
 
 # Conversions
-@test promote_type(typeof(s1), Float64) == ControlCore.DSisoRational
-@test promote_type(ControlCore.DSisoRational{Int}, Float64) == ControlCore.DSisoRational
+@test promote_type(typeof(s1), Float64) == SystemsBase.DSisoRational
+@test promote_type(SystemsBase.DSisoRational{Int}, Float64) == SystemsBase.DSisoRational
 
-@test convert(ControlCore.DSisoRational, one(Float64)) ≈ tf(one(Float64), zero(Float64))
+@test convert(SystemsBase.DSisoRational, one(Float64)) ≈ tf(one(Float64), zero(Float64))
 
 for s in [s1,s2,s3]
 # I/O mapping

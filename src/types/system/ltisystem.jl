@@ -1,11 +1,3 @@
-# Value type to differentiate between SISO and MIMO systems
-immutable Siso{T}
-end
-
-# Value type to differentiate between continuous- and discrete-time systems
-immutable Continuous{T}
-end
-
 abstract LtiSystem{T,S}
 
 # Printing functions

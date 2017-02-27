@@ -12,17 +12,17 @@ show(s1)
 showall(s1)
 showcompact(s1)
 
-@test typeof(s1)     == ControlCore.CSisoRational{Int,Int}
-@test typeof(s2)     == ControlCore.CSisoRational{Int,Float64}
-@test typeof(s3)     == ControlCore.CSisoRational{Float64,Float64}
-@test typeof(s4)     == ControlCore.CSisoRational{Float64,Float64}
-@test typeof(s5)     == ControlCore.CSisoRational{Rational{Int},Int}
+@test typeof(s1)     == SystemsBase.CSisoRational{Int,Int}
+@test typeof(s2)     == SystemsBase.CSisoRational{Int,Float64}
+@test typeof(s3)     == SystemsBase.CSisoRational{Float64,Float64}
+@test typeof(s4)     == SystemsBase.CSisoRational{Float64,Float64}
+@test typeof(s5)     == SystemsBase.CSisoRational{Rational{Int},Int}
 
 # Conversions
-@test promote_type(typeof(s1), Float64) == ControlCore.CSisoRational
-@test promote_type(ControlCore.CSisoRational{Int}, Float64) == ControlCore.CSisoRational
+@test promote_type(typeof(s1), Float64) == SystemsBase.CSisoRational
+@test promote_type(SystemsBase.CSisoRational{Int}, Float64) == SystemsBase.CSisoRational
 
-@test convert(ControlCore.CSisoRational, one(Float64)) ≈ tf(one(Float64))
+@test convert(SystemsBase.CSisoRational, one(Float64)) ≈ tf(one(Float64))
 
 for s in [s1,s2,s3]
 # I/O mapping

@@ -1,4 +1,4 @@
-module ControlCore
+module SystemsBase
 
 # Import conversion and promotion functions for overloading
 import Base: convert, promote_rule
@@ -56,6 +56,8 @@ export
   evalfr
 
 using Polynomials
+using RationalFunctions
+import RationalFunctions: Var, Conj
 using RecipesBase
 using Compat
 import Compat.view

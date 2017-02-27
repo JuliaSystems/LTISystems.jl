@@ -102,7 +102,7 @@ end
 # F(s) evaluates the LTI system F at the complex value or vector s.
 #
 # It is not possible to define this directly for LtiSystem in Julia 0.5, because it is an abstract type.
-# WARNING: If one defines a new subtype of LtiSystem in a package requiring ControlCore.jl,
+# WARNING: If one defines a new subtype of LtiSystem in a package requiring SystemsBase.jl,
 # these lines should be executed again.
 for T in subtypes(LtiSystem)
   (sys::T)(s) = evalfr(sys,s)

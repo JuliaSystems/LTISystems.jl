@@ -12,16 +12,16 @@ show(s1)
 showall(s1)
 showcompact(s1)
 
-@test typeof(s1)     == ControlCore.CSisoZpk{Int,Int,Int}
-@test typeof(s2)     == ControlCore.CSisoZpk{Int,Float64,Int}
-@test typeof(s3)     == ControlCore.CSisoZpk{Int8,Int8,Float64}
-@test typeof(s4)     == ControlCore.CSisoZpk{Rational{Int},Int,Int}
+@test typeof(s1)     == SystemsBase.CSisoZpk{Int,Int,Int}
+@test typeof(s2)     == SystemsBase.CSisoZpk{Int,Float64,Int}
+@test typeof(s3)     == SystemsBase.CSisoZpk{Int8,Int8,Float64}
+@test typeof(s4)     == SystemsBase.CSisoZpk{Rational{Int},Int,Int}
 
 # Conversions
-@test promote_type(typeof(s1), Float64)           == ControlCore.CSisoZpk
-@test promote_type(ControlCore.CSisoZpk, Float64) == ControlCore.CSisoZpk
+@test promote_type(typeof(s1), Float64)           == SystemsBase.CSisoZpk
+@test promote_type(SystemsBase.CSisoZpk, Float64) == SystemsBase.CSisoZpk
 
-@test convert(ControlCore.CSisoZpk, one(Float64)) ≈  zpk(one(Float64))
+@test convert(SystemsBase.CSisoZpk, one(Float64)) ≈  zpk(one(Float64))
 
 for s in [s1,s2]
 # I/O mapping

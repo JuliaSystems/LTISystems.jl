@@ -15,9 +15,9 @@ notifications:
 
 script:
   - julia -e 'Pkg.clone(pwd())'
-  - julia --check-bounds=yes --inline=no -e 'Pkg.test("ControlCore",
+  - julia --check-bounds=yes --inline=no -e 'Pkg.test("SystemsBase",
     coverage=true)'
 
 after_success:
-  - julia -e 'cd(Pkg.dir("ControlCore")); Pkg.add("Coverage"); using Coverage;
+  - julia -e 'cd(Pkg.dir("SystemsBase")); Pkg.add("Coverage"); using Coverage;
     Coveralls.submit(process_folder()); Codecov.submit(process_folder())'

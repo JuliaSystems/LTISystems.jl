@@ -1,18 +1,18 @@
-# Contributing to ControlCore
+# Contributing to SystemsBase
 
 First, we would like to thank you for taking the time to contribute to
-`ControlCore`.
+`SystemsBase`.
 
 Below we will list, in ascending order of difficulty, some of the ways you can
-help us make `ControlCore` a better package.
+help us make `SystemsBase` a better package.
 
 ## Bug Reports and Feature Requests
 
-Probably the easiest way to contribute to `ControlCore` is through reporting a
+Probably the easiest way to contribute to `SystemsBase` is through reporting a
 bug or a lack of a feature you have noticed when using the package.
 
 Before reporting a bug or requesting a new feature, please note that we try to
-collect them in our [Kanban][cc-kanban]. If you have checked the Kanban and could
+collect them in our [Kanban][js-kanban]. If you have checked the Kanban and could
 not find any report related to your problem, please go ahead and [submit][new-issue]
 a new issue.
 
@@ -23,8 +23,8 @@ should look like (hopefully with a small `Julia` code excerpt), how the **actual
 behaviour** looks like in the current implementation as well as some **proposals**
 and/or **references**, if you can find any, to help solve the issue.
 
-[cc-kanban]: https://github.com/KTH-AC/ControlCore.jl/projects/1
-[new-issue]: https://github.com/KTH-AC/ControlCore.jl/issues/new
+[js-kanban]: https://github.com/JuliaSystems/SystemsBase.jl/projects/1
+[new-issue]: https://github.com/JuliaSystems/SystemsBase.jl/issues/new
 
 ## Pull Requests
 
@@ -36,12 +36,12 @@ Currently, we are following the [conversational development][conv-devel] practic
 which is rather common in `git`-based repositories:
 
 1.  We [submit][new-issue] a new issue for our work, if it is not already
-    [listed][cc-kanban]. This way, we inform each other about our contribution,
-2.  We [fork][cc-fork] the repository (in)to our own username space,
+    [listed][js-kanban]. This way, we inform each other about our contribution,
+2.  We [fork][js-fork] the repository (in)to our own username space,
 3.  We create a new branch having a name `xxx-yyy-zzz` where `xxx` is the issue
     number assigned and `yyy-zzz` is some short description,
 4.  We do the changes in our own fork and test the changes locally in `Julia`,
-5.  We [create][cc-pull] a pull request and elaborate on our solution.
+5.  We [create][js-pull] a pull request and elaborate on our solution.
 
 This helps us not only focus our attention on issues which are not being dealt
 with by another contributor, but also learn from each other when discussing under
@@ -69,37 +69,37 @@ behind them. Using the `Fixes #issue_number.` in the end is useful to close the
 corresponding issue automatically upon a successful merge.
 
 [conv-devel]: https://youtu.be/iV7mVGPXrxU?t=16m25s
-[cc-fork]: https://github.com/KTH-AC/ControlCore.jl/fork
-[cc-pull]: https://github.com/KTH-AC/ControlCore.jl/pull/new/master
+[js-fork]: https://github.com/JuliaSystems/SystemsBase.jl/fork
+[js-pull]: https://github.com/JuliaSystems/SystemsBase.jl/pull/new/master
 
 ### Documentation Enhancements
 
 A relatively easy way to contribute via a pull request is through writing missing
 documentation elements or improving already available ones.
 
-Mainly, we have two different places for our documentation in `ControlCore`:
+Mainly, we have two different places for our documentation in `SystemsBase`:
 
 1.  Code documentation in `Julia`. This is what `Julia` uses to show help to users
     issuing a `?command_name`. We try to follow the documentation
     [guidelines][julia-doc] written by the `Julia` team, and we write them in the
     corresponding `.jl` file in the repository,
-2.  Documentation in [readthedocs][cc-rtfd]. We are using [reStructuredText][rst-doc]
+2.  Documentation in [readthedocs][js-rtfd]. We are using [reStructuredText][rst-doc]
     for this purpose and keep all the documentation related files under the `doc/`
     folder.
 
-If you choose to contribute to `ControlCore` through documentation enhancements,
+If you choose to contribute to `SystemsBase` through documentation enhancements,
 you can follow steps 1, 2, 3 and 5 above, and you can write a `[ci-skip]`
 statement in your commit message to disable testing.
 
 [julia-doc]: http://docs.julialang.org/en/latest/manual/documentation/
-[cc-rtfd]: http://controlcore.rtfd.io/
+[js-rtfd]: http://systemsbase.rtfd.io/
 [rst-doc]: http://docutils.sourceforge.net/docs/user/rst/quickref.html
 
 ### Proposing Tutorials and Walkthroughs
 
-Instead of enhancing documentation in `ControlCore`, you might be willing to create
-a tutorial showcasing the use of `Julia` and `ControlCore` in control systems
+Instead of enhancing documentation in `SystemsBase`, you might be willing to create
+a tutorial showcasing the use of `Julia` and `SystemsBase` in control systems
 identification and analysis applications, you are more than welcome to contribute
 to our [tutorials repository][kth-ctj].
 
-[kth-ctj]: https://github.com/KTH-AC/CTJ.git
+[kth-ctj]: https://github.com/JuliaSystems/CTJ.git

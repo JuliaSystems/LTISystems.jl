@@ -10,62 +10,44 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
 
   # Continuous-time, single-input-single-output state-space model
   @compat function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix, M4<:Real}(A::M1, B::M2, C::M3, D::M4)
+    M3<:AbstractMatrix}(A::M1, B::M2, C::M3, D::Real)
     d = fill(D,1,1)
     nx, nu, ny = sscheck(A, B, C, d)
-    new{Siso{true},Continuous{true},M1,M2,M3,Matrix{M4}}(A, B, C, d, nx, nu, ny,
-      zero(Float64))
+    new{Val{:siso},Val{:cont},M1,M2,M3,typeof(d)}(A, B, C, d, nx, nu, ny, zero(Float64))
   end
 
   # Discrete-time, single-input-single-output state-space model
   @compat function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix, M4<:Real}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
+    M3<:AbstractMatrix}(A::M1, B::M2, C::M3, D::Real, Ts::Real)
     d = fill(D,1,1)
     nx, nu, ny = sscheck(A, B, C, d, Ts)
-    new{Siso{true},Continuous{false},M1,M2,M3,Matrix{M4}}(A, B, C, d, nx, nu, ny,
+    new{Val{:siso},Val{:disc},M1,M2,M3,typeof(d)}(A, B, C, d, nx, nu, ny,
       convert(Float64, Ts))
   end
 
   # Continuous-time, multi-input-multi-output state-space model
   @compat function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
+    M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
     nx, nu, ny = sscheck(A, B, C, D)
-    new{Siso{false},Continuous{true},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
-      zero(Float64))
+    new{Val{:mimo},Val{:cont},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny, zero(Float64))
   end
-  @compat function (::Type{StateSpace{Siso{true}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
+  @compat function (::Type{StateSpace{Val{:siso}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
     @assert size(D) == (1,1) "StateSpace: The system should be SISO"
-    nx, nu, ny = sscheck(A, B, C, D)
-    new{Siso{true},Continuous{true},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
-      zero(Float64))
-  end
-  @compat function (::Type{StateSpace{Siso{false}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
-    nx, nu, ny = sscheck(A, B, C, D)
-    new{Siso{false},Continuous{true},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
-      zero(Float64))
+    StateSpace(A, B, C, D[1])
   end
 
   # Discrete-time, multi-input-multi-output state-space model
   @compat function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
+    M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
     nx, nu, ny = sscheck(A, B, C, D, Ts)
-    new{Siso{false},Continuous{false},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
+    new{Val{:mimo},Val{:disc},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
       convert(Float64, Ts))
   end
-  @compat function (::Type{StateSpace{Siso{true}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
+  @compat function (::Type{StateSpace{Val{:siso}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
     @assert size(D) == (1,1) "StateSpace: The system should be SISO"
-    nx, nu, ny = sscheck(A, B, C, D, Ts)
-    new{Siso{true},Continuous{false},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
-      convert(Float64, Ts))
-  end
-  @compat function (::Type{StateSpace{Siso{false}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix, M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
-    nx, nu, ny = sscheck(A, B, C, D, Ts)
-    new{Siso{false},Continuous{false},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
-      convert(Float64, Ts))
+    StateSpace(A, B, C, D[1], Ts)
   end
 end
 
@@ -96,19 +78,24 @@ function sscheck(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix,
 end
 
 # Outer constructors
-ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::Real = zero(Int8)) =
+# SISO
+ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::Real = zero(Float64)) =
   StateSpace(A, B, C, D)
 
 ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::Real, Ts::Real)    =
   StateSpace(A, B, C, D, Ts)
 
+ss(D::Real)           = StateSpace(zeros(0,0), zeros(0,1), zeros(1,0), D)
+ss(D::Real, Ts::Real) = StateSpace(zeros(0,0), zeros(0,1), zeros(1,0), D, Ts)
+
+# MIMO
 ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix)    =
   StateSpace(A, B, C, D)
 
 function ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix,
   D::AbstractVector)
   @assert isempty(D) "ss(A,B,C,D): D can only be an empty vector"
-  d = spzeros(Int8, size(C,1), size(B,2))
+  d = spzeros(Float64, size(C,1), size(B,2))
   StateSpace(A, B, C, d)
 end
 
@@ -118,17 +105,29 @@ ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix,
 function ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix,
   D::AbstractVector, Ts::Real)
   @assert isempty(D) "ss(A,B,C,D): D can only be an empty vector"
-  d = spzeros(Int8, size(C,1), size(B,2))
+  d = spzeros(Float64, size(C,1), size(B,2))
   StateSpace(A, B, C, d, Ts)
 end
-
-ss(D::Real)           = StateSpace(zeros(0,0), zeros(0,1), zeros(1,0), D)
-ss(D::Real, Ts::Real) = StateSpace(zeros(0,0), zeros(0,1), zeros(1,0), D, Ts)
 
 ss(D::AbstractMatrix)           = StateSpace(zeros(0,0), zeros(0, size(D,2)),
   zeros(size(D,1), 0), D)
 ss(D::AbstractMatrix, Ts::Real) = StateSpace(zeros(0,0), zeros(0, size(D,2)),
   zeros(size(D,1), 0), D, Ts)
+
+# Convenience catch-all
+function _form(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
+  C::Union{Real,VecOrMat})
+  a = isa(A, Real) ? fill(A,1,1) : reshape(A, size(A,1,2)...)
+  b = isa(B, Real) ? fill(B,1,1) : reshape(B, size(B,1,2)...)
+  c = isa(C, Real) ? fill(C,1,1) : reshape(C, size(C,1,2)...)
+  return a, b, c
+end
+ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat}, C::Union{Real,VecOrMat})
+  = ss(_form(A, B, C)...)
+ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat}, C::Union{Real,VecOrMat}, D)
+  = ss(_form(A, B, C)..., D)
+ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat}, C::Union{Real,VecOrMat}, D,
+  Ts::Real) = ss(_form(A, B, C)..., D, Ts)
 
 # Interfaces
 isdiscrete{T,S}(s::StateSpace{T,Continuous{S}}) = !S

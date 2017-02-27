@@ -1,4 +1,4 @@
-Welcome to ControlCore.jl's documentation!
+Welcome to SystemsBase.jl's documentation!
 ==========================================
 
 .. toctree::

@@ -2,10 +2,10 @@ println("Starting continuous MIMO transfer function type tests...")
 
 # Construction
 nsisosystem = 2
-s1m = Array{ControlCore.SisoTf}(2,1)
-s2m = Array{ControlCore.SisoTf}(2,1)
-s3m = Array{ControlCore.SisoTf}(2,1)
-s4m = Array{ControlCore.SisoTf}(2,1)
+s1m = Array{SystemsBase.SisoTf}(2,1)
+s2m = Array{SystemsBase.SisoTf}(2,1)
+s3m = Array{SystemsBase.SisoTf}(2,1)
+s4m = Array{SystemsBase.SisoTf}(2,1)
 
 # zpk construction
 s1m[1] = zpk([-2], [1, 1], 1)
@@ -55,13 +55,13 @@ for kk in 1:nsisosystem
   m2 = mimo([[s1 s2]; [s3 s4]])
 
   # Conversions
-  @test promote_type(typeof(m1), typeof(m2)) == ControlCore.CMimo
-  @test promote_type(typeof(m1), Array{Float64,2}) == ControlCore.CMimo
-  @test promote_type(typeof(m1), Float64) == ControlCore.CMimo
+  @test promote_type(typeof(m1), typeof(m2)) == SystemsBase.CMimo
+  @test promote_type(typeof(m1), Array{Float64,2}) == SystemsBase.CMimo
+  @test promote_type(typeof(m1), Float64) == SystemsBase.CMimo
 
-  @test convert(ControlCore.CMimo, one(Float64))  ≈ one(m1)
-  @test convert(ControlCore.CMimo, zero(Float64)) ≈ zero(m1)
-  @test convert(ControlCore.CMimo, eye(2)) ≈ zpk(eye(2))
+  @test convert(SystemsBase.CMimo, one(Float64))  ≈ one(m1)
+  @test convert(SystemsBase.CMimo, zero(Float64)) ≈ zero(m1)
+  @test convert(SystemsBase.CMimo, eye(2)) ≈ zpk(eye(2))
 
   for s in [m1,m2]
     # I/O mapping

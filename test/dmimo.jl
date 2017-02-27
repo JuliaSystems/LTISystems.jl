@@ -2,11 +2,11 @@ println("Starting discrete MIMO transfer function type tests...")
 
 # Construction
 nsisosystem = 2
-s1m = Array{ControlCore.SisoTf}(nsisosystem,1)
-s2m = Array{ControlCore.SisoTf}(nsisosystem,1)
-s3m = Array{ControlCore.SisoTf}(nsisosystem,1)
-s4m = Array{ControlCore.SisoTf}(nsisosystem,1)
-s5m = Array{ControlCore.SisoTf}(nsisosystem,1)
+s1m = Array{SystemsBase.SisoTf}(nsisosystem,1)
+s2m = Array{SystemsBase.SisoTf}(nsisosystem,1)
+s3m = Array{SystemsBase.SisoTf}(nsisosystem,1)
+s4m = Array{SystemsBase.SisoTf}(nsisosystem,1)
+s5m = Array{SystemsBase.SisoTf}(nsisosystem,1)
 
 # zpk construction
 s1m[1] = zpk([-2], [1, 1], 1, 1)
@@ -60,13 +60,13 @@ for kk in 1:nsisosystem
   m3 = mimo([[s5]; [s5]])
 
   # Conversions
-  @test promote_type(typeof(m1), typeof(m2)) == ControlCore.DMimo
-  @test promote_type(typeof(m1), Array{Float64,2}) == ControlCore.DMimo
-  @test promote_type(typeof(m1), Float64) == ControlCore.DMimo
+  @test promote_type(typeof(m1), typeof(m2)) == SystemsBase.DMimo
+  @test promote_type(typeof(m1), Array{Float64,2}) == SystemsBase.DMimo
+  @test promote_type(typeof(m1), Float64) == SystemsBase.DMimo
 
-  @test convert(ControlCore.DMimo, one(Float64))  ≈ one(m1)
-  @test convert(ControlCore.DMimo, zero(Float64)) ≈ zero(m1)
-  @test convert(ControlCore.DMimo, eye(2)) ≈ zpk(eye(2), zero(Float64))
+  @test convert(SystemsBase.DMimo, one(Float64))  ≈ one(m1)
+  @test convert(SystemsBase.DMimo, zero(Float64)) ≈ zero(m1)
+  @test convert(SystemsBase.DMimo, eye(2)) ≈ zpk(eye(2), zero(Float64))
 
   for s in [m1,m2]
     # I/O mapping
