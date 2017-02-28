@@ -65,7 +65,6 @@ export
 
 using Polynomials
 using RationalFunctions
-import RationalFunctions: Var, Conj
 using PolynomialMatrices
 using RecipesBase
 using Compat
@@ -74,7 +73,6 @@ import Compat.view
 # System types
 include("types/system/ltisystem.jl")
 include("types/system/rationaltf.jl")
-include("types/system/zeropolegain.jl")
 include("types/system/statespace.jl")
 include("types/system/generalmimo.jl")
 include("types/system/mfd.jl")
