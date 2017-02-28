@@ -1,63 +1,76 @@
-immutable RationalTF{T,S,M} <: LtiSystem{T,S}
-  mat::M
+immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
+  mat::V
   nu::Int
   ny::Int
   Ts::Float64
 
   # Continuous-time, single-input-single-output rational transfer function model
   @compat function (::Type{RationalTF}){S,U<:Real,V<:Real}(r::RationalFunction{
-    Var{:s},Conj{S},U,V})
+    Val{:s},Val{S},U,V})
     mat     = fill(r, 1, 1)
-    ny, nu  = tfcheck(mat)
-    new{Siso{true},Continuous{true},typeof(mat)}(mat, nu, ny, zero(Float64))
+    ny, nu  = _tfcheck(mat)
+    new{Val{:siso},Val{:cont},Val{S},typeof(mat)}(mat, nu, ny, zero(Float64))
   end
 
   # Discrete-time, single-input-single-output rational transfer function model
   @compat function (::Type{RationalTF}){S,U<:Real,V<:Real}(r::RationalFunction{
-    Var{:z},Conj{S},U,V}, Ts::Real)
+    Val{:z},Val{S},U,V}, Ts::Real)
     mat     = fill(r, 1, 1)
-    ny, nu  = tfcheck(mat, Ts)
-    new{Siso{true},Continuous{false},typeof(mat)}(mat, nu, ny, convert(Float64, Ts))
+    ny, nu  = _tfcheck(mat, Ts)
+    new{Val{:siso},Val{:disc},Val{S},typeof(mat)}(mat, nu, ny, convert(Float64, Ts))
   end
 
   # Continuous-time, multi-input-multi-output rational transfer function model
   @compat function (::Type{RationalTF}){S,U<:Real,V<:Real}(
-    mat::AbstractMatrix{RationalFunction{Var{:s},Conj{S},U,V}})
-    ny, nu  = tfcheck(mat)
-    new{Siso{false},Continuous{true},typeof(mat)}(mat, nu, ny, zero(Float64))
+    mat::AbstractMatrix{RationalFunction{Val{:s},Val{S},U,V}})
+    ny, nu  = _tfcheck(mat)
+    new{Val{:mimo},Val{:cont},Val{S},typeof(mat)}(mat, nu, ny, zero(Float64))
+  end
+  @compat function (::Type{RationalTF}){T<:Real,S}(mat::AbstractMatrix{T},
+    t::Type{Val{S}} = Val{:notc})
+    m = map(x->RationalFunction(x, :s), mat)
+    ny, nu  = _tfcheck(m)
+    new{Val{:mimo},Val{:cont},t,typeof(m)}(m, nu, ny, zero(Float64))
   end
 
   # Discrete-time, multi-input-multi-output rational transfer function model
   @compat function (::Type{RationalTF}){S,U<:Real,V<:Real}(
-    mat::AbstractMatrix{RationalFunction{Var{:z},Conj{S},U,V}}, Ts::Real)
-    ny, nu  = tfcheck(mat, Ts)
-    new{Siso{false},Continuous{false},typeof(mat)}(mat, nu, ny, convert(Float64, Ts))
+    mat::AbstractMatrix{RationalFunction{Val{:z},Val{S},U,V}}, Ts::Real)
+    ny, nu  = _tfcheck(mat, Ts)
+    new{Val{:mimo},Val{:disc},Val{S},typeof(mat)}(mat, nu, ny, convert(Float64, Ts))
+  end
+  @compat function (::Type{RationalTF}){T<:Real,S}(mat::AbstractMatrix{T},
+    Ts::Real, t::Type{Val{S}} = Val{:notc})
+    m = map(x->RationalFunction(x, :z), mat)
+    ny, nu  = _tfcheck(m)
+    new{Val{:mimo},Val{:disc},t,typeof(m)}(m, nu, ny, convert(Float64, Ts))
   end
 end
 
+# Warn the user in other type constructions
 @compat function (::Type{RationalTF})(r::RationalFunction)
-  warn("RationalTF(r): r can only be a real-coefficient `RationalFunction` of variable `:s`")
+  warn("tf(r): r can only be a real-coefficient `RationalFunction` of variable `:s`")
   throw(DomainError())
 end
 
 @compat function (::Type{RationalTF})(r::RationalFunction, Ts::Real)
-  warn("RationalTF(r, Ts): r can only be a real-coefficient `RationalFunction` of variable `:z`")
+  warn("tf(r, Ts): r can only be a real-coefficient `RationalFunction` of variable `:z`")
   throw(DomainError())
 end
 
 @compat function (::Type{RationalTF})(m::AbstractMatrix)
-  warn("RationalTF(m): m can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:s`")
+  warn("tf(m): m can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:s`")
   throw(DomainError())
 end
 
 @compat function (::Type{RationalTF})(m::AbstractMatrix, Ts::Real)
-  warn("RationalTF(m, Ts): m can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:z`")
+  warn("tf(m, Ts): m can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:z`")
   throw(DomainError())
 end
 
 # Enforce rational transfer function type invariance
-function tfcheck{T,S,U<:Real,V<:Real}(mat::AbstractMatrix{RationalFunction{Var{T},
-  Conj{S},U,V}}, Ts::Real = zero(Float64))
+function _tfcheck{T,S,U<:Real,V<:Real}(mat::AbstractMatrix{RationalFunction{Val{T},
+  Val{S},U,V}}, Ts::Real = zero(Float64))
   # Check sampling time
   if Ts < zero(Ts) || isinf(Ts)
     warn("RationalTF: Ts must be a non-negative real number")
@@ -72,7 +85,9 @@ function tfcheck{T,S,U<:Real,V<:Real}(mat::AbstractMatrix{RationalFunction{Var{T
     throw(DomainError())
   end
 
-  for idx in eachindex(mat)
+  # `eachindex` has problems when we want to use `divrem` (when we have
+  # `CartesianIndex` types)
+  for idx in 1:length(mat)
     numpoly   = num(mat[idx])
     denpoly   = den(mat[idx])
     col, row  = divrem(idx-1, ny)
@@ -93,17 +108,17 @@ end
 # Helper function
 _reverse(x)         = reverse(x)
 _reverse(x::Number) = [x]
-typealias NV Union{Number,Vector}
+const NV            = Union{Number,Vector}
 
 # Outer constructors
-## Continuous-time, single-input-single-output rational transfer function model
+# Continuous-time, single-input-single-output rational transfer function model
 tf(r::RationalFunction) = RationalTF(r)
 tf(num::NV, den::NV)    = RationalTF(RationalFunction(_reverse(num), _reverse(den), :s))
 tf(num::NV, den::Poly)  = RationalTF(RationalFunction(_reverse(num), den))
 tf(num::Poly, den::NV)  = RationalTF(RationalFunction(num, _reverse(den)))
 tf(num::Poly, den::Poly)= RationalTF(RationalFunction(num, den))
 
-## Discrete-time, single-input-single-output rational transfer function model
+# Discrete-time, single-input-single-output rational transfer function model
 tf(r::RationalFunction, Ts::Real) = RationalTF(r, Ts)
 tf(num::NV, den::NV, Ts::Real)    = RationalTF(RationalFunction(_reverse(num), _reverse(den), :z), Ts)
 tf(num::NV, den::Poly, Ts::Real)  = RationalTF(RationalFunction(_reverse(num), den), Ts)
@@ -130,262 +145,340 @@ function tf(num::AbstractVector, den::AbstractVector, Ts::Real, var::Symbol)
   RationalTF(RationalFunction(numpoly, denpoly), Ts)
 end
 
-## Continuous-time, multi-input-multi-output rational transfer function model
-tf(mat::AbstractMatrix)            = RationalTF(mat)
+# Continuous-time, multi-input-multi-output rational transfer function model
+tf{T,S,U,V}(mat::AbstractMatrix{RationalFunction{Val{T},Val{S},U,V}})           =
+  RationalTF(mat)
 
-## Discrete-time, multi-input-multi-output rational transfer function model
-tf(mat::AbstractMatrix, Ts::Real)  = RationalTF(mat, Ts)
+# Discrete-time, multi-input-multi-output rational transfer function model
+tf{T,S,U,V}(mat::AbstractMatrix{RationalFunction{Val{T},Val{S},U,V}}, Ts::Real) =
+  RationalTF(mat, Ts)
 
-# # Interfaces
-# samplingtime(s::RationalTF) = s.Ts
-#
-# # Think carefully about how to implement numstates
-# numstates(s::RationalTF)    = numstates(ss(s))
-# # Currently, we only allow for proper systems
-# numstates(s::RationalTF{Siso{true}}) = degree(den[1])
-#
-# numinputs(s::RationalTF)    = s.nu
-# numoutputs(s::RationalTF)   = s.ny
-#
-# # Dimension information
-# ndims(s::RationalTF{Siso{true}})  = 1
-# ndims(s::RationalTF{Siso{false}}) = 2
-# size(s::RationalTF)               = size(s.num)
-# size(s::RationalTF, dim::Int)     = size(s.num, dim)
-# size(s::RationalTF, dims::Int...) = size(s.num, dims)
-#
-# # Iteration interface (meaningful only for MIMO systems)
-# # TODO
-#
-# # Slicing (`getindex`) of MIMO systems
-# # TODO
-#
-# # Printing functions
-# summary(s::RationalTF{Siso{true},Continuous{true}})   =
-#   string("tf(nx=", numstates(s), ")")
-# summary(s::RationalTF{Siso{true},Continuous{false}})  =
-#   string("tf(nx=", numstates(s), ",Ts=", s.Ts, ")")
-# summary(s::RationalTF{Siso{false},Continuous{true}})  =
-#   string("tf(nx=", numstates(s), ",nu=", s.nu, ",ny=", s.ny, ")")
-# summary(s::RationalTF{Siso{false},Continuous{false}}) =
-#   string("tf(nx=", numstates(s), ",nu=", s.nu, ",ny=", s.ny, ",Ts=", s.Ts, ")")
-#
-# showcompact(io::IO, s::RationalTF) = print(io, summary(s))
-#
-# function show{T}(io::IO, s::RationalTF{T,Continuous{true}})
-#   # TODO
-# end
-#
-# function show{T}(io::IO, s::RationalTF{T,Continuous{false}})
-#   # TODO
-# end
-#
-# function showall(io::IO, s::RationalTF)
-#   # TODO
-# end
-#
-# # Conversion and promotion
-# promote_rule{T<:Real,S}(::Type{T}, ::Type{RationalTF{Siso{true},S}}) =
-#   RationalTF{Siso{true},S}
-# promote_rule{T<:AbstractMatrix,S}(::Type{T}, ::Type{RationalTF{Siso{false},S}}) =
-#   RationalTF{Siso{false},S}
-#
-# convert(::Type{RationalTF{Siso{true},Continuous{true}}}, g::Real)             =
-#   tf(g)
-# convert(::Type{RationalTF{Siso{true},Continuous{false}}}, g::Real)            =
-#   tf(g, zero(Float64))
-# convert(::Type{RationalTF{Siso{false},Continuous{true}}}, g::AbstractMatrix)  =
-#   tf(g)
-# convert(::Type{RationalTF{Siso{false},Continuous{false}}}, g::AbstractMatrix) =
-#   tf(g, zero(Float64))
-#
-# # Multiplicative and additive identities (meaningful only for SISO)
-# one(::Type{RationalTF{Siso{true},Continuous{true}}})    =
-#   tf(one(Int8))
-# one(::Type{RationalTF{Siso{true},Continuous{false}}})   =
-#   tf(one(Int8), zero(Float64))
-# zero(::Type{RationalTF{Siso{true},Continuous{true}}})   =
-#   tf(zero(Int8))
-# zero(::Type{RationalTF{Siso{true},Continuous{false}}})  =
-#   tf(zero(Int8), zero(Float64))
-#
-# one(s::RationalTF{Siso{true},Continuous{true}})   =
-#   tf(one(eltype(s.num)), one(eltype(s.den)))
-# one(s::RationalTF{Siso{true},Continuous{false}})  =
-#   tf(one(eltype(s.num)), one(eltype(s.den)), zero(Float64))
-# zero(s::RationalTF{Siso{true},Continuous{true}})  =
-#   tf(zero(eltype(s.num)), one(eltype(s.den)))
-# zero(s::RationalTF{Siso{true},Continuous{false}}) =
-#   tf(zero(eltype(s.num)), one(eltype(s.den)), zero(Float64))
-#
-# # Inverse of a rational transfer function model
-# function tfinv(s::RationalTF{Siso{true}})
-#   @assert degree(num[1]) == degree(den[1]) "inv(sys): inverse is not a proper system"
-#   return den, num
-# end
-#
-# function tfinv(s::RationalTF{Siso{false}})
-#   @assert s.ny == s.nu "inv(sys): s.ny ≠ s.nu"
-#   # TODO
-#   # return num, den
-# end
-#
-# function inv(s::RationalTF{Siso{true},Continuous{true}})
-#   num, den = tfinv(s)
-#   tf(num[1], den[1])
-# end
-#
-# function inv(s::RationalTF{Siso{true},Continuous{false}})
-#   num, den = tfinv(s)
-#   tf(num[1], den[1], s.Ts)
-# end
-#
-# function inv(s::RationalTF{Siso{false},Continuous{true}})
-#   num, den = tfinv(s)
-#   tf(num, den)
-# end
-#
-# function inv(s::RationalTF{Siso{false},Continuous{false}})
-#   num, den = tfinv(s)
-#   tf(num, den, s.Ts)
-# end
-#
-# # Invariant zeros of a rational transfer function model
-# zeros(s::RationalTF{Siso{true}}) = roots(s.num[1])
-#
+# Continuous-time, multi-input-multi-output rational transfer function model
+tf{T<:Real,S}(mat::AbstractMatrix{T}, t::Type{Val{S}} = Val{:notc})           =
+  RationalTF(mat, t)
+
+# Discrete-time, multi-input-multi-output rational transfer function model
+tf{T<:Real,S}(mat::AbstractMatrix{T}, Ts::Real, t::Type{Val{S}} = Val{:notc}) =
+  RationalTF(mat, Ts, t)
+
+# Interfaces
+samplingtime(s::RationalTF) = s.Ts
+
+numinputs(s::RationalTF)    = s.nu
+numoutputs(s::RationalTF)   = s.ny
+
+# Iteration interface
+start(s::RationalTF{Val{:mimo}})        = start(s.mat)
+next(s::RationalTF{Val{:mimo}}, state)  = (s[state], state+1)
+done(s::RationalTF{Val{:mimo}}, state)  = done(s.mat, state)
+
+eltype{S,U}(::Type{RationalTF{Val{:mimo},Val{S},Val{U}}}) =
+  RationalTF{Val{:siso},Val{S},Val{U}}
+
+length(s::RationalTF{Val{:mimo}}) = length(s.mat)
+size(s::RationalTF)               = size(s.mat)
+size(s::RationalTF, d)            = size(s.mat, d)
+
+# Indexing of MIMO systems
+function getindex(s::RationalTF{Val{:mimo},Val{:cont}}, row::Int, col::Int)
+  (1 ≤ row ≤ s.ny && 1 ≤ col ≤ s.nu) || throw(BoundsError(s.mat, (row,col)))
+  RationalTF(s.mat[row,col])
+end
+
+function getindex(s::RationalTF{Val{:mimo},Val{:disc}}, row::Int, col::Int)
+  (1 ≤ row ≤ s.ny && 1 ≤ col ≤ s.nu) || throw(BoundsError(s.mat, (row,col)))
+  RationalTF(s.mat[row,col], s.Ts)
+end
+
+function getindex(s::RationalTF{Val{:mimo}}, idx::Int)
+  (1 ≤ idx ≤ length(s.mat)) || throw(BoundsError(s.mat, idx))
+  col, row  = divrem(idx-1, s.ny)
+  s[row+1, col+1]
+end
+
+function getindex(s::RationalTF{Val{:mimo},Val{:cont}}, rows::AbstractVector{Int},
+  cols::AbstractVector{Int})
+  1 ≤ minimum(rows) ≤ maximum(rows) ≤ s.ny || throw(BoundsError(s.mat, rows))
+  1 ≤ minimum(cols) ≤ maximum(cols) ≤ s.nu || throw(BoundsError(s.mat, cols))
+
+  RationalTF(view(s.mat, rows, cols))
+end
+
+function getindex(s::RationalTF{Val{:mimo},Val{:disc}}, rows::AbstractVector{Int},
+  cols::AbstractVector{Int})
+  1 ≤ minimum(rows) ≤ maximum(rows) ≤ s.ny || throw(BoundsError(s.mat, rows))
+  1 ≤ minimum(cols) ≤ maximum(cols) ≤ s.nu || throw(BoundsError(s.mat, cols))
+
+  RationalTF(view(s.mat, rows, cols), s.Ts)
+end
+
+function getindex(s::RationalTF{Val{:mimo}}, indices::AbstractVector{Int})
+  1 ≤ minimum(indices) ≤ maximum(indices) ≤ length(s.mat) || throw(BoundsError(s.mat, indices))
+
+  temp  = map(x->divrem(x-1, s.ny), indices)
+  cols  = map(x->x[1]+1, temp)
+  rows  = map(x->x[2]+1, temp)
+
+  s[rows, cols]
+end
+
+getindex(s::RationalTF{Val{:mimo}}, rows, ::Colon)    = s[rows, 1:s.nu]
+getindex(s::RationalTF{Val{:mimo}}, ::Colon, cols)    = s[1:s.ny, cols]
+getindex(s::RationalTF{Val{:mimo}}, ::Colon)          = s[1:end]
+getindex(s::RationalTF{Val{:mimo}}, ::Colon, ::Colon) = s[1:s.ny,1:s.nu]
+endof(s::RationalTF{Val{:mimo}})                      = endof(s.mat)
+
+# Conversion and promotion
+promote_rule{T<:Real,S,U,V}(::Type{T}, ::Type{RationalTF{Val{:siso},Val{S},Val{U},V}}) =
+  RationalTF{Val{:siso},Val{S},Val{U},Matrix{promote_type(T,eltype(V))}}
+promote_rule{T<:AbstractMatrix,S,U,V}(::Type{T}, ::Type{RationalTF{Val{:mimo},Val{S},Val{U},V}}) =
+  RationalTF{Val{:mimo},Val{S},Val{U},promote_type(T,V)}
+
+convert{U,V}(::Type{RationalTF{Val{:siso},Val{:cont},Val{U},V}}, g::Real) =
+  tf(RationalFunction(g, :s, Val{U}))
+convert{U,V}(::Type{RationalTF{Val{:siso},Val{:disc},Val{U},V}}, g::Real) =
+  tf(RationalFunction(g, :z, Val{U}), zero(Float64))
+convert{U,V}(::Type{RationalTF{Val{:mimo},Val{:cont},Val{U},V}}, g::AbstractMatrix) =
+  tf(g)
+convert{U,V}(::Type{RationalTF{Val{:mimo},Val{:disc},Val{U},V}}, g::AbstractMatrix) =
+  tf(g, zero(Float64))
+
+# Multiplicative and additive identities (meaningful only for SISO)
+one{U,V}(::Type{RationalTF{Val{:siso},Val{:cont},Val{U},V}})  =
+  tf(one(eltype(V)))
+one{U,V}(::Type{RationalTF{Val{:siso},Val{:disc},Val{U},V}})  =
+  tf(one(eltype(V)), zero(Float64))
+zero{U,V}(::Type{RationalTF{Val{:siso},Val{:cont},Val{U},V}}) =
+  tf(zero(eltype(V)))
+zero{U,V}(::Type{RationalTF{Val{:siso},Val{:disc},Val{U},V}}) =
+  tf(zero(eltype(V)), zero(Float64))
+
+one(s::RationalTF{Val{:siso},Val{:cont}})   = one(typeof(s))
+one(s::RationalTF{Val{:siso},Val{:disc}})   = one(typeof(s))
+zero(s::RationalTF{Val{:siso},Val{:cont}})  = zero(typeof(s))
+zero(s::RationalTF{Val{:siso},Val{:disc}})  = zero(typeof(s))
+
+# Inverse of a transfer-function model
+function _tfinv(s::RationalTF)
+  if s.ny ≠ s.nu
+    warn("inv(sys): s.ny ≠ s.nu")
+    throw(DomainError())
+  end
+
+  try
+    return inv(s.mat)
+  catch err
+    warn("inv(sys): sys is not invertible")
+    throw(DomainError())
+  end
+end
+
+function inv(s::RationalTF{Val{:siso},Val{:cont}})
+  mat = _tfinv(s)
+  RationalTF(mat[1])
+end
+
+function inv(s::RationalTF{Val{:siso},Val{:disc}})
+  mat = _tfinv(s)
+  RationalTF(mat[1], s.Ts)
+end
+
+function inv(s::RationalTF{Val{:mimo},Val{:cont}})
+  mat = _tfinv(s)
+  RationalTF(mat)
+end
+
+function inv(s::RationalTF{Val{:mimo},Val{:disc}})
+  mat = _tfinv(s)
+  RationalTF(mat, s.Ts)
+end
+
+# # Invariant zeros of a transfer-function model
 # function zeros(s::RationalTF)
-#   # TODO
+#   Ar, Br, Cr, Dr, mr, nr, pr        = reduce(s.A, s.B, s.C, s.mat)
+#   if nr == 0
+#     return Complex{Float64}[]
+#   end
+#   Arc, Brc, Crc, Drc, mrc, nrc, prc = reduce(Ar.', Cr.', Br.', Dr.')
+#   if nrc == 0
+#     return Complex{Float64}[]
+#   end
+#
+#   svdobj  = svdfact([Crc Drc], thin = false)
+#   W       = flipdim(svdobj.Vt', 2)
+#   Af      = [Arc Brc]*W[:, 1:nrc]
+#
+#   if mrc == 0
+#     zerovalues = eigfact(Af).values
+#     return zerovalues
+#   else
+#     Bf    = W[1:nrc,1:nrc]
+#     zerovalues = eigfact(Af, Bf).values
+#     return zerovalues
+#   end
 # end
 #
-# # Transmission zeros of a rational transfer function model
+# # Transmission zeros of a transfer-function model
 # tzeros(s::RationalTF) = zeros(minreal(s))
 #
-# # Poles of a rational transfer function model
-# poles(s::RationalTF{Siso{true}}) = roots(s.den[1])
-#
+# # Poles of a transfer-function model
 # function poles(s::RationalTF)
-#   # TODO
+#   Aₘ, _, _, _ = minreal(s.A, s.B, s.C, s.mat)
+#   return eigfact(Aₘ).values
 # end
 #
-# # Negative of a rational transfer function model
-# -(s::RationalTF{Siso{true},Continuous{true}})   =
-#   RationalTF(-s.num[1], s.den[1])
-# -(s::RationalTF{Siso{true},Continuous{false}})  =
-#   RationalTF(-s.num[1], s.den[1], s.Ts)
-# -(s::RationalTF{Siso{false},Continuous{true}})  =
-#   RationalTF(-s.num, s.den)
-# -(s::RationalTF{Siso{false},Continuous{false}}) =
-#   RationalTF(-s.num, s.den, s.Ts)
+# Negative of a transfer-function model
+-(s::RationalTF{Val{:siso},Val{:cont}}) = RationalTF(-s.mat[1])
+-(s::RationalTF{Val{:siso},Val{:disc}}) = RationalTF(-s.mat[1], s.Ts)
+-(s::RationalTF{Val{:mimo},Val{:cont}}) = RationalTF(-s.mat)
+-(s::RationalTF{Val{:mimo},Val{:disc}}) = RationalTF(-s.mat, s.Ts)
+
+# Addition
+function _tfparallel{T1,T2,S,U}(s1::RationalTF{Val{T1},Val{S},Val{U}},
+  s2::RationalTF{Val{T2},Val{S},Val{U}})
+  if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts ≠ zero(s2.Ts)
+    warn("parallel(s1,s2): Sampling time mismatch")
+    throw(DomainError())
+  end
+
+  if size(s1) ≠ size(s2)
+    warn("parallel(s1,s2): size(s1) ≠ size(s2)")
+    throw(DomainError())
+  end
+
+  return s1.mat + s2.mat, max(s1.Ts, s2.Ts)
+end
+
+function +{U}(s1::RationalTF{Val{:siso},Val{:cont},Val{U}},
+  s2::RationalTF{Val{:siso},Val{:cont},Val{U}})
+  mat, _ = _tfparallel(s1, s2)
+  RationalTF(mat[1])
+end
+
+function +{U}(s1::RationalTF{Val{:siso},Val{:disc},Val{U}},
+  s2::RationalTF{Val{:siso},Val{:disc},Val{U}})
+  mat, Ts = _tfparallel(s1, s2)
+  RationalTF(mat[1], Ts)
+end
+
+function +{T1,T2,U}(s1::RationalTF{Val{T1},Val{:cont},Val{U}},
+  s2::RationalTF{Val{T2},Val{:cont},Val{U}})
+  mat, _ = _tfparallel(s1, s2)
+  RationalTF(mat)
+end
+
+function +{T1,T2,U}(s1::RationalTF{Val{T1},Val{:disc},Val{U}},
+  s2::RationalTF{Val{T2},Val{:disc},Val{U}})
+  mat, Ts = _tfparallel(s1, s2)
+  RationalTF(mat, Ts)
+end
+
+.+(s1::RationalTF{Val{:siso}}, s2::RationalTF{Val{:siso}}) = +(s1, s2)
+
+# Here, we need to have promote(...), maybe? It is tricky, otherwise, to
+# differentiate between `Number`s and `AbstractMatrix`es. Note, this part in
+# `StateSpace` is the same; however, in `ss`, we don't have any problems when
+# we construct the type with only one input.
++{T,U}(s::RationalTF{Val{T},Val{:cont},Val{U}}, g) = +(s, tf(g))
++{T,U}(s::RationalTF{Val{T},Val{:disc},Val{U}}, g) = +(s, tf(g, zero(Float64)))
++{T,U}(g, s::RationalTF{Val{T},Val{:cont},Val{U}}) = +(tf(g), s)
++{T,U}(g, s::RationalTF{Val{T},Val{:disc},Val{U}}) = +(tf(g, zero(Float64)), s)
+
+.+(s::RationalTF{Val{:siso}}, g::Real)    = +(s, g)
+.+(g::Real, s::RationalTF{Val{:siso}})    = +(g, s)
+
+# Subtraction
+-(s1::RationalTF, s2::RationalTF) = +(s1, -s2)
+
+.-(s1::RationalTF{Val{:siso}}, s2::RationalTF{Val{:siso}}) = -(s1, s2)
+
+# Same as above. We should also take into account the conjugation property, as
+# before.
 #
-# # Addition
-# function tfparallel{T1,T2,S}(s1::RationalTF{T1,S}, s2::RationalTF{T2,S})
-#   @assert s1.Ts ≈ s2.Ts || s1.Ts == zero(Float64) ||
-#     s2.Ts == zero(Float64) "parallel(s1,s2): Sampling time mismatch"
-#   @assert size(s1) == size(s2) "parallel(s1,s2): size(s1) ≠ size(s2)"
+# NOTE: maybe, we should just reconsider this type of method overloads for `g`s
+# of type `Any`. Relating to our discussion, we can think of writing something like
 #
-#   # return num, den
-# end
+# -(s::RationalTF, g) = -(s, convert(typeof(s), g))
 #
-# function +(s1::RationalTF{Siso{true},Continuous{true}},
-#   s2::RationalTF{Siso{true},Continuous{true}})
-#   num, den = tfparallel(s1, s2)
-#   RationalTF(num[1], den[1])
-# end
-#
-# function +(s1::RationalTF{Siso{true},Continuous{false}},
-#   s2::RationalTF{Siso{true},Continuous{false}})
-#   num, den = tfparallel(s1, s2)
-#   RationalTF(num[1], den[1], s1.Ts)
-# end
-#
-# function +{T1,T2}(s1::RationalTF{T1,Continuous{true}},
-#   s2::RationalTF{T2,Continuous{true}})
-#   num, den = tfparallel(s1, s2)
-#   RationalTF(num, den)
-# end
-#
-# function +{T1,T2}(s1::RationalTF{T1,Continuous{false}},
-#   s2::RationalTF{T2,Continuous{false}})
-#   num, den = tfparallel(s1, s2)
-#   RationalTF(num, den, s1.Ts)
-# end
-#
-# .+(s1::RationalTF{Siso{true}}, s2::RationalTF{Siso{true}}) = +(s1, s2)
-#
-# +{T}(s::RationalTF{T,Continuous{true}}, g)  = +(s, tf(g))
-# +{T}(s::RationalTF{T,Continuous{false}}, g) = +(s, tf(g, zero(Float64)))
-# +{T}(g, s::RationalTF{T,Continuous{true}})  = +(tf(g), s)
-# +{T}(g, s::RationalTF{T,Continuous{false}}) = +(tf(g, zero(Float64)), s)
-#
-# .+(s::RationalTF{Siso{true}}, g::Real)  = +(s, g)
-# .+(g::Real, s::RationalTF{Siso{true}})  = +(g, s)
-#
-# # Subtraction
-# -(s1::RationalTF, s2::RationalTF) = +(s1, -s2)
-#
-# .-(s1::RationalTF{Siso{true}}, s2::RationalTF{Siso{true}}) = -(s1, s2)
-#
-# -{T}(s::RationalTF{T,Continuous{true}}, g)  = -(s, tf(g))
-# -{T}(s::RationalTF{T,Continuous{false}}, g) = -(s, tf(g, zero(Float64)))
-# -{T}(g, s::RationalTF{T,Continuous{true}})  = -(tf(g), s)
-# -{T}(g, s::RationalTF{T,Continuous{false}}) = -(tf(g, zero(Float64)), s)
-#
-# .-(s::RationalTF{Siso{true}}, g::Real)  = -(s, g)
-# .-(g::Real, s::RationalTF{Siso{true}})  = -(g, s)
-#
-# # Multiplication
-# function tfseries{T1,T2,S}(s1::RationalTF{T1,S}, s2::RationalTF{T2,S})
-#   # Remark: s1*s2 implies u -> s2 -> s1 -> y
-#   @assert s1.Ts ≈ s2.Ts || s1.Ts == zero(Float64) ||
-#     s2.Ts == zero(Float64) "series(s1,s2): Sampling time mismatch"
-#   @assert s1.nu == s2.ny "series(s1,s2): s1.nu ≠ s2.ny"
-#
-#   return num, den
-# end
-#
-# function *(s1::RationalTF{Siso{true},Continuous{true}},
-#   s2::RationalTF{Siso{true},Continuous{true}})
-#   num, den = tfseries(s1, s2)
-#   RationalTF(num[1], den[1])
-# end
-#
-# function *(s1::RationalTF{Siso{true},Continuous{false}},
-#   s2::RationalTF{Siso{true},Continuous{false}})
-#   num, den = tfseries(s1, s2)
-#   RationalTF(num[1], den[1], s1.Ts)
-# end
-#
-# function *{T1,T2}(s1::RationalTF{T1,Continuous{true}},
-#   s2::RationalTF{T2,Continuous{true}})
-#   num, den = tfseries(s1, s2)
-#   RationalTF(num, den)
-# end
-#
-# function *{T1,T2}(s1::RationalTF{T1,Continuous{false}},
-#   s2::RationalTF{T2,Continuous{false}})
-#   num, den = tfseries(s1, s2)
-#   RationalTF(num, den, s1.Ts)
-# end
-#
-# .*(s1::RationalTF{Siso{true}}, s2::RationalTF{Siso{true}}) = *(s1, s2)
-#
-# *{T}(s::RationalTF{T,Continuous{true}}, g)  = *(s, tf(g))
-# *{T}(s::RationalTF{T,Continuous{false}}, g) = *(s, tf(g, zero(Float64)))
-# *{T}(g, s::RationalTF{T,Continuous{true}})  = *(tf(g), s)
-# *{T}(g, s::RationalTF{T,Continuous{false}}) = *(tf(g, zero(Float64)), s)
-#
-# .*(s::RationalTF{Siso{true}}, g::Real)  = *(s, g)
-# .*(g::Real, s::RationalTF{Siso{true}})  = *(g, s)
-#
-# # Division
-# /(s1::RationalTF, s2::RationalTF) = *(s1, inv(s2))
-#
-# ./(s1::RationalTF{Siso{true}}, s2::RationalTF{Siso{true}}) = /(s1, s2)
-#
-# /{T}(s::RationalTF{T,Continuous{true}}, g)  = /(s, tf(g))
-# /{T}(s::RationalTF{T,Continuous{false}}, g) = /(s, tf(g, zero(Float64)))
-# /{T}(g, s::RationalTF{T,Continuous{true}})  = /(tf(g), s)
-# /{T}(g, s::RationalTF{T,Continuous{false}}) = /(tf(g, zero(Float64)), s)
-#
-# ./(s::RationalTF{Siso{true}}, g::Real)  = /(s, g)
-# ./(g::Real, s::RationalTF{Siso{true}})  = /(g, s)
+# maybe ? Then, the left-hand side will always determine the resulting type.
+-{T,U}(s::RationalTF{Val{T},Val{:cont},Val{U}}, g) = -(s, tf(g))
+-{T,U}(s::RationalTF{Val{T},Val{:disc},Val{U}}, g) = -(s, tf(g, zero(Float64)))
+-{T,U}(g, s::RationalTF{Val{T},Val{:cont},Val{U}}) = -(tf(g), s)
+-{T,U}(g, s::RationalTF{Val{T},Val{:disc},Val{U}}) = -(tf(g, zero(Float64)), s)
+
+.-(s::RationalTF{Val{:siso}}, g::Real)    = -(s, g)
+.-(g::Real, s::RationalTF{Val{:siso}})    = -(g, s)
+
+# Multiplication
+function _tfseries{T1,T2,S,U}(s1::RationalTF{Val{T1},Val{S},Val{U}},
+  s2::RationalTF{Val{T2},Val{S},Val{U}})
+  # Remark: s1*s2 implies u -> s2 -> s1 -> y
+
+  if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts == zero(s2.Ts)
+    warn("series(s1,s2): Sampling time mismatch")
+    throw(DomainError())
+  end
+
+  if s1.nu ≠ s2.ny
+    warn("series(s1,s2): s1.nu ≠ s2.ny")
+    throw(DomainError())
+  end
+
+  # NOTE: Without this (ugly) trick, temp is Array{Any,2}
+  # any good workarounds for this? I have cheated from Julia v0.6 implementation
+  el1 = one(eltype(s1.mat))
+  el2 = one(eltype(s2.mat))
+  el  = el1*el2 + el1*el2
+
+  temp::AbstractMatrix{typeof(el)} = s1.mat * s2.mat
+
+  return temp, max(s1.Ts, s2.Ts)
+end
+
+function *{U}(s1::RationalTF{Val{:siso},Val{:cont},Val{U}},
+  s2::RationalTF{Val{:siso},Val{:cont},Val{U}})
+  mat, _ = _tfseries(s1, s2)
+  RationalTF(mat[1])
+end
+
+function *{U}(s1::RationalTF{Val{:siso},Val{:disc},Val{U}},
+  s2::RationalTF{Val{:siso},Val{:disc},Val{U}})
+  mat, Ts = _tfseries(s1, s2)
+  RationalTF(mat[1], Ts)
+end
+
+function *{T1,T2,U}(s1::RationalTF{Val{T1},Val{:cont},Val{U}},
+  s2::RationalTF{Val{T2},Val{:cont},Val{U}})
+  mat, _ = _tfseries(s1, s2)
+  RationalTF(mat)
+end
+
+function *{T1,T2,U}(s1::RationalTF{Val{T1},Val{:disc},Val{U}},
+  s2::RationalTF{Val{T2},Val{:disc},Val{U}})
+  mat, Ts = _tfseries(s1, s2)
+  RationalTF(mat, Ts)
+end
+
+.*(s1::RationalTF{Val{:siso}}, s2::RationalTF{Val{:siso}}) = *(s1, s2)
+
+# TODO: Clean as above.
+*{T,U}(s::RationalTF{Val{T},Val{:cont},Val{U}}, g) = *(s, tf(g))
+*{T,U}(s::RationalTF{Val{T},Val{:disc},Val{U}}, g) = *(s, tf(g, zero(Float64)))
+*{T,U}(g, s::RationalTF{Val{T},Val{:cont},Val{U}}) = *(tf(g), s)
+*{T,U}(g, s::RationalTF{Val{T},Val{:disc},Val{U}}) = *(tf(g, zero(Float64)), s)
+
+.*(s::RationalTF{Val{:siso}}, g::Real)    = *(s, g)
+.*(g::Real, s::RationalTF{Val{:siso}})    = *(g, s)
+
+# Division
+/(s1::RationalTF, s2::RationalTF)         = *(s1, inv(s2))
+
+./(s1::RationalTF{Val{:siso}}, s2::RationalTF{Val{:siso}}) = /(s1, s2)
+
+/{T,U}(s::RationalTF{Val{T},Val{:cont},Val{U}}, g) = /(s, tf(g))
+/{T,U}(s::RationalTF{Val{T},Val{:disc},Val{U}}, g) = /(s, tf(g, zero(Float64)))
+/{T,U}(g, s::RationalTF{Val{T},Val{:cont},Val{U}}) = /(tf(g), s)
+/{T,U}(g, s::RationalTF{Val{T},Val{:disc},Val{U}}) = /(tf(g, zero(Float64)), s)
+
+./(s::RationalTF{Val{:siso}}, g::Real)    = /(s, g)
+./(g::Real, s::RationalTF{Val{:siso}})    = /(g, s)

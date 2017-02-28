@@ -59,22 +59,52 @@ function _sscheck(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix,
   nc, mc  = size(C)
   nd, md  = size(D)
 
-  @assert na == ma                    "StateSpace: A must be square"
-  @assert eltype(A) <: Real           "StateSpace: A must be a matrix of real numbers"
-  @assert na == nb                    "StateSpace: A and B must have the same number of rows"
-  @assert eltype(B) <: Real           "StateSpace: B must be a matrix of real numbers"
-  @assert ma == mc                    "StateSpace: A and C must have the same number of columns"
-  @assert eltype(C) <: Real           "StateSpace: C must be a matrix of real numbers"
-  @assert nc == nd && nc ≥ 1          "StateSpace: C and D must have the same number (≥1) of rows"
-  @assert mb == md && mb ≥ 1          "StateSpace: B and D must have the same number (≥1) of columns"
-  @assert eltype(D) <: Real           "StateSpace: D must be a matrix of real numbers"
-  @assert Ts ≥ zero(Ts) && !isinf(Ts) "StateSpace: Ts must be non-negative real number"
+  if Ts < zero(Ts) || isinf(Ts)
+    warn("StateSpace: Ts must be non-negative real number")
+    throw(DomainError())
+  end
 
-  nx = na
-  nu = mb
-  ny = nc
+  if na ≠ ma || !(eltype(A) <: Real)
+    warn("StateSpace: A must be a square matrix of real numbers")
+    throw(DomainError())
+  end
 
-  return nx, nu, ny
+  if !(eltype(B) <: Real)
+    warn("StateSpace: B must be a matrix of real numbers")
+    throw(DomainError())
+  end
+
+  if !(eltype(C) <: Real)
+    warn("StateSpace: C must be a matrix of real numbers")
+    throw(DomainError())
+  end
+
+  if !(eltype(D) <: Real)
+    warn("StateSpace: D must be a matrix of real numbers")
+    throw(DomainError())
+  end
+
+  if na ≠ nb
+    warn("StateSpace: A and B must have the same number of rows")
+    throw(DomainError())
+  end
+
+  if ma ≠ mc
+    warn("StateSpace: A and C must have the same number of columns")
+    throw(DomainError())
+  end
+
+  if nc ≠ nd || nc < 1
+    warn("StateSpace: C and D must have the same number (≥1) of rows")
+    throw(DomainError())
+  end
+
+  if mb ≠ md || mb < 1
+    warn("StateSpace: B and D must have the same number (≥1) of columns")
+    throw(DomainError())
+  end
+
+  return na, mb, nc
 end
 
 # Outer constructors
@@ -122,12 +152,12 @@ function _reshape(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
   c = isa(C, Real) ? fill(C,1,1) : reshape(C, size(C,1,2)...)
   return a, b, c
 end
-ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat}, C::Union{Real,VecOrMat})
-  = ss(_reshape(A, B, C)...)
-ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat}, C::Union{Real,VecOrMat}, D)
-  = ss(_reshape(A, B, C)..., D)
-ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat}, C::Union{Real,VecOrMat}, D,
-  Ts::Real) = ss(_reshape(A, B, C)..., D, Ts)
+ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
+  C::Union{Real,VecOrMat})              = ss(_reshape(A, B, C)...)
+ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
+  C::Union{Real,VecOrMat}, D)           = ss(_reshape(A, B, C)..., D)
+ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
+  C::Union{Real,VecOrMat}, D, Ts::Real) = ss(_reshape(A, B, C)..., D, Ts)
 
 # Interfaces
 samplingtime(s::StateSpace) = s.Ts
@@ -145,6 +175,7 @@ eltype{S,M1}(::Type{StateSpace{Val{:mimo},Val{S},M1}}) =
   StateSpace{Val{:siso},Val{S},M1}
 
 length(s::StateSpace{Val{:mimo}}) = length(s.D)
+size(s::StateSpace)               = size(s.D)
 size(s::StateSpace, d)            = size(s.D, d)
 
 # Indexing of MIMO systems
@@ -161,13 +192,11 @@ end
 function getindex(s::StateSpace{Val{:mimo}}, idx::Int)
   (1 ≤ idx ≤ length(s.D)) || throw(BoundsError(s.D, idx))
   col, row  = divrem(idx-1, s.ny)
-  col       += 1
-  row       += 1
-  s[row, col]
+  s[row+1, col+1]
 end
 
 function getindex(s::StateSpace{Val{:mimo},Val{:cont}}, rows::AbstractVector{Int},
-  cols::AbstractVector)
+  cols::AbstractVector{Int})
   1 ≤ minimum(rows) ≤ maximum(rows) ≤ s.ny || throw(BoundsError(s.D, rows))
   1 ≤ minimum(cols) ≤ maximum(cols) ≤ s.nu || throw(BoundsError(s.D, cols))
 
@@ -175,7 +204,7 @@ function getindex(s::StateSpace{Val{:mimo},Val{:cont}}, rows::AbstractVector{Int
 end
 
 function getindex(s::StateSpace{Val{:mimo},Val{:disc}}, rows::AbstractVector{Int},
-  cols::AbstractVector)
+  cols::AbstractVector{Int})
   1 ≤ minimum(rows) ≤ maximum(rows) ≤ s.ny || throw(BoundsError(s.D, rows))
   1 ≤ minimum(cols) ≤ maximum(cols) ≤ s.nu || throw(BoundsError(s.D, cols))
 
@@ -201,7 +230,7 @@ endof(s::StateSpace{Val{:mimo}})                      = endof(s.D)
 # Conversion and promotion
 promote_rule{T<:Real,S}(::Type{T}, ::Type{StateSpace{Val{:siso},Val{S}}}) =
   StateSpace{Val{:siso},Val{S}}
-promote_rule{T<:AbstractMatrix,Val{S}}(::Type{T}, ::Type{StateSpace{Val{:mimo},Val{S}}}) =
+promote_rule{T<:AbstractMatrix,S}(::Type{T}, ::Type{StateSpace{Val{:mimo},Val{S}}}) =
   StateSpace{Val{:mimo},Val{S}}
 
 convert(::Type{StateSpace{Val{:siso},Val{:cont}}}, g::Real) = ss(g)
@@ -210,19 +239,23 @@ convert(::Type{StateSpace{Val{:mimo},Val{:cont}}}, g::AbstractMatrix) = ss(g)
 convert(::Type{StateSpace{Val{:mimo},Val{:disc}}}, g::AbstractMatrix) = ss(g, zero(Float64))
 
 # Multiplicative and additive identities (meaningful only for SISO)
-one(::Type{StateSpace{Val{:siso},Val{:cont}}})  = ss(one(Float64))
-one(::Type{StateSpace{Val{:siso},Val{:disc}}})  = ss(one(Float64), zero(Float64))
-zero(::Type{StateSpace{Val{:siso},Val{:cont}}}) = ss(zero(Float64))
-zero(::Type{StateSpace{Val{:siso},Val{:disc}}}) = ss(zero(Float64), zero(Float64))
+one{M1,M2,M3,M4}(::Type{StateSpace{Val{:siso},Val{:cont},M1,M2,M3,M4}})   =
+  StateSpace(zeros(eltype(M1),0,0), zeros(eltype(M2),0,1), zeros(eltype(M3),1,0),
+  one(eltype(M4)))
+one{M1,M2,M3,M4}(::Type{StateSpace{Val{:siso},Val{:disc},M1,M2,M3,M4}})   =
+  StateSpace(zeros(eltype(M1),0,0), zeros(eltype(M2),0,1), zeros(eltype(M3),1,0),
+  one(eltype(M4)), zero(Float64))
+zero{M1,M2,M3,M4}(::Type{StateSpace{Val{:siso},Val{:cont},M1,M2,M3,M4}})  =
+  StateSpace(zeros(eltype(M1),0,0), zeros(eltype(M2),0,1), zeros(eltype(M3),1,0),
+  zero(eltype(M4)))
+zero{M1,M2,M3,M4}(::Type{StateSpace{Val{:siso},Val{:disc},M1,M2,M3,M4}})  =
+  StateSpace(zeros(eltype(M1),0,0), zeros(eltype(M2),0,1), zeros(eltype(M3),1,0),
+  zero(eltype(M4)), zero(Float64))
 
-one(s::StateSpace{Val{:siso},Val{:cont}})   = StateSpace(similar(s.A,0,0),
-  similar(s.B,0,1), similar(s.C,1,0), one(eltype(s.D)))
-one(s::StateSpace{Val{:siso},Val{:disc}})   = StateSpace(similar(s.A,0,0),
-  similar(s.B,0,1), similar(s.C,1,0), one(eltype(s.D)), s.Ts)
-zero(s::StateSpace{Val{:siso},Val{:cont}})  = StateSpace(similar(s.A,0,0),
-  similar(s.B,0,1), similar(s.C,1,0), zero(eltype(s.D)))
-zero(s::StateSpace{Val{:siso},Val{:disc}})  = StateSpace(similar(s.A,0,0),
-  similar(s.B,0,1), similar(s.C,1,0), zero(eltype(s.D)), s.Ts)
+one(s::StateSpace{Val{:siso},Val{:cont}})   = one(typeof(s))
+one(s::StateSpace{Val{:siso},Val{:disc}})   = one(typeof(s))
+zero(s::StateSpace{Val{:siso},Val{:cont}})  = zero(typeof(s))
+zero(s::StateSpace{Val{:siso},Val{:disc}})  = zero(typeof(s))
 
 # Inverse of a state-space model
 function _ssinv(s::StateSpace)
@@ -374,7 +407,8 @@ end
 .-(g::Real, s::StateSpace{Val{:siso}})    = -(g, s)
 
 # Multiplication
-function _ssseries{T1,T2,S}(s1::StateSpace{Val{T1},S}, s2::StateSpace{Val{T2},S})
+function _ssseries{T1,T2,S}(s1::StateSpace{Val{T1},Val{S}},
+  s2::StateSpace{Val{T2},Val{S}})
   # Remark: s1*s2 implies u -> s2 -> s1 -> y
 
   if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts == zero(s2.Ts)
