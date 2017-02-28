@@ -9,11 +9,11 @@ import Base: one, zero
 # Import inv and zeros
 import Base: inv, zeros
 
-# Import slicing functions
-import Base: ndims, size, getindex
+# Indexing
+import Base: getindex, setindex!, endof
 
 # Import iteration interface functions
-import Base: start, next, done, eltype, length, eachindex, endof
+import Base: start, next, done, eltype, length, size
 
 # Import printing functions
 import Base: showcompact, show, showall, summary
@@ -74,18 +74,16 @@ import Compat.view
 include("types/system/ltisystem.jl")
 include("types/system/rationaltf.jl")
 include("types/system/statespace.jl")
-include("types/system/generalmimo.jl")
 include("types/system/mfd.jl")
-#include("display.jl")
 
 # Conversions
 include("conversions/mfd2ss.jl")
 include("conversions/ss2mfd.jl")
 
 # Response types
-include("types/response/systemresponse.jl")
-include("types/response/boderesponse.jl")
-include("types/response/nyquistresponse.jl")
+# include("types/response/systemresponse.jl")
+# include("types/response/boderesponse.jl")
+# include("types/response/nyquistresponse.jl")
 
 # Interconnections
 #include("interconnections/series.jl")
