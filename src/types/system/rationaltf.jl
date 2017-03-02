@@ -85,8 +85,7 @@ function _tfcheck{T,S,U<:Real,V<:Real}(mat::AbstractMatrix{RationalFunction{Val{
     throw(DomainError())
   end
 
-  # `eachindex` has problems when we want to use `divrem` (when we have
-  # `CartesianIndex` types)
+  # Check properness, etc.
   for idx in 1:length(mat)
     numpoly   = num(mat[idx])
     denpoly   = den(mat[idx])
@@ -172,8 +171,8 @@ start(s::RationalTF{Val{:mimo}})        = start(s.mat)
 next(s::RationalTF{Val{:mimo}}, state)  = (s[state], state+1)
 done(s::RationalTF{Val{:mimo}}, state)  = done(s.mat, state)
 
-eltype{S,U}(::Type{RationalTF{Val{:mimo},Val{S},Val{U}}}) =
-  RationalTF{Val{:siso},Val{S},Val{U}}
+eltype{S,U,V}(::Type{RationalTF{Val{:mimo},Val{S},Val{U},V}}) =
+  RationalTF{Val{:siso},Val{S},Val{U},Matrix{eltype(V)}}
 
 length(s::RationalTF{Val{:mimo}}) = length(s.mat)
 size(s::RationalTF)               = size(s.mat)
@@ -229,18 +228,22 @@ getindex(s::RationalTF{Val{:mimo}}, ::Colon, ::Colon) = s[1:s.ny,1:s.nu]
 endof(s::RationalTF{Val{:mimo}})                      = endof(s.mat)
 
 # Conversion and promotion
-promote_rule{T<:Real,S,U,V}(::Type{T}, ::Type{RationalTF{Val{:siso},Val{S},Val{U},V}}) =
-  RationalTF{Val{:siso},Val{S},Val{U},Matrix{promote_type(T,eltype(V))}}
+promote_rule{T1<:Real,T2,S,U,V}(::Type{T1}, ::Type{RationalTF{Val{T2},Val{S},Val{U},V}}) =
+  RationalTF{Val{T2},Val{S},Val{U}}
 promote_rule{T<:AbstractMatrix,S,U,V}(::Type{T}, ::Type{RationalTF{Val{:mimo},Val{S},Val{U},V}}) =
-  RationalTF{Val{:mimo},Val{S},Val{U},promote_type(T,V)}
+  RationalTF{Val{:mimo},Val{S},Val{U}}
 
-convert{U,V}(::Type{RationalTF{Val{:siso},Val{:cont},Val{U},V}}, g::Real) =
+convert{U}(::Type{RationalTF{Val{:siso},Val{:cont},Val{U}}}, g::Real) =
   tf(RationalFunction(g, :s, Val{U}))
-convert{U,V}(::Type{RationalTF{Val{:siso},Val{:disc},Val{U},V}}, g::Real) =
+convert{U}(::Type{RationalTF{Val{:siso},Val{:disc},Val{U}}}, g::Real) =
   tf(RationalFunction(g, :z, Val{U}), zero(Float64))
-convert{U,V}(::Type{RationalTF{Val{:mimo},Val{:cont},Val{U},V}}, g::AbstractMatrix) =
+convert{U}(::Type{RationalTF{Val{:mimo},Val{:cont},Val{U}}}, g::Real) =
+  tf(fill(g,1,1), Val{U})
+convert{U}(::Type{RationalTF{Val{:mimo},Val{:disc},Val{U}}}, g::Real) =
+  tf(fill(g,1,1), zero(Float64), Val{U})
+convert{U}(::Type{RationalTF{Val{:mimo},Val{:cont},Val{U}}}, g::AbstractMatrix) =
   tf(g)
-convert{U,V}(::Type{RationalTF{Val{:mimo},Val{:disc},Val{U},V}}, g::AbstractMatrix) =
+convert{U}(::Type{RationalTF{Val{:mimo},Val{:disc},Val{U}}}, g::AbstractMatrix) =
   tf(g, zero(Float64))
 
 # Multiplicative and additive identities (meaningful only for SISO)
@@ -375,14 +378,10 @@ end
 
 .+(s1::RationalTF{Val{:siso}}, s2::RationalTF{Val{:siso}}) = +(s1, s2)
 
-# Here, we need to have promote(...), maybe? It is tricky, otherwise, to
-# differentiate between `Number`s and `AbstractMatrix`es. Note, this part in
-# `StateSpace` is the same; however, in `ss`, we don't have any problems when
-# we construct the type with only one input.
-+{T,U}(s::RationalTF{Val{T},Val{:cont},Val{U}}, g) = +(s, tf(g))
-+{T,U}(s::RationalTF{Val{T},Val{:disc},Val{U}}, g) = +(s, tf(g, zero(Float64)))
-+{T,U}(g, s::RationalTF{Val{T},Val{:cont},Val{U}}) = +(tf(g), s)
-+{T,U}(g, s::RationalTF{Val{T},Val{:disc},Val{U}}) = +(tf(g, zero(Float64)), s)
++{T,S,U}(s::RationalTF{Val{T},Val{S},Val{U}}, g::Union{Real,AbstractMatrix})  =
+  +(s, convert(typeof(s), g))
++{T,S,U}(g::Union{Real,AbstractMatrix}, s::RationalTF{Val{T},Val{S},Val{U}})  =
+  +(convert(typeof(s), g), s)
 
 .+(s::RationalTF{Val{:siso}}, g::Real)    = +(s, g)
 .+(g::Real, s::RationalTF{Val{:siso}})    = +(g, s)
@@ -392,19 +391,10 @@ end
 
 .-(s1::RationalTF{Val{:siso}}, s2::RationalTF{Val{:siso}}) = -(s1, s2)
 
-# Same as above. We should also take into account the conjugation property, as
-# before.
-#
-# NOTE: maybe, we should just reconsider this type of method overloads for `g`s
-# of type `Any`. Relating to our discussion, we can think of writing something like
-#
-# -(s::RationalTF, g) = -(s, convert(typeof(s), g))
-#
-# maybe ? Then, the left-hand side will always determine the resulting type.
--{T,U}(s::RationalTF{Val{T},Val{:cont},Val{U}}, g) = -(s, tf(g))
--{T,U}(s::RationalTF{Val{T},Val{:disc},Val{U}}, g) = -(s, tf(g, zero(Float64)))
--{T,U}(g, s::RationalTF{Val{T},Val{:cont},Val{U}}) = -(tf(g), s)
--{T,U}(g, s::RationalTF{Val{T},Val{:disc},Val{U}}) = -(tf(g, zero(Float64)), s)
+-{T,S,U}(s::RationalTF{Val{T},Val{S},Val{U}}, g::Union{Real,AbstractMatrix})  =
+  -(s, convert(typeof(s), g))
+-{T,S,U}(g::Union{Real,AbstractMatrix}, s::RationalTF{Val{T},Val{S},Val{U}})  =
+  -(convert(typeof(s), g), s)
 
 .-(s::RationalTF{Val{:siso}}, g::Real)    = -(s, g)
 .-(g::Real, s::RationalTF{Val{:siso}})    = -(g, s)
@@ -424,8 +414,7 @@ function _tfseries{T1,T2,S,U}(s1::RationalTF{Val{T1},Val{S},Val{U}},
     throw(DomainError())
   end
 
-  # NOTE: Without this (ugly) trick, temp is Array{Any,2}
-  # any good workarounds for this? I have cheated from Julia v0.6 implementation
+  # NOTE: Trick borrowed from Julia v0.6 implementation of `matmul`.
   el1 = one(eltype(s1.mat))
   el2 = one(eltype(s2.mat))
   el  = el1*el2 + el1*el2
@@ -461,11 +450,10 @@ end
 
 .*(s1::RationalTF{Val{:siso}}, s2::RationalTF{Val{:siso}}) = *(s1, s2)
 
-# TODO: Clean as above.
-*{T,U}(s::RationalTF{Val{T},Val{:cont},Val{U}}, g) = *(s, tf(g))
-*{T,U}(s::RationalTF{Val{T},Val{:disc},Val{U}}, g) = *(s, tf(g, zero(Float64)))
-*{T,U}(g, s::RationalTF{Val{T},Val{:cont},Val{U}}) = *(tf(g), s)
-*{T,U}(g, s::RationalTF{Val{T},Val{:disc},Val{U}}) = *(tf(g, zero(Float64)), s)
+*{T,S,U}(s::RationalTF{Val{T},Val{S},Val{U}}, g::Union{Real,AbstractMatrix})  =
+  *(s, convert(typeof(s), g))
+*{T,S,U}(g::Union{Real,AbstractMatrix}, s::RationalTF{Val{T},Val{S},Val{U}})  =
+  *(convert(typeof(s), g), s)
 
 .*(s::RationalTF{Val{:siso}}, g::Real)    = *(s, g)
 .*(g::Real, s::RationalTF{Val{:siso}})    = *(g, s)
@@ -475,10 +463,10 @@ end
 
 ./(s1::RationalTF{Val{:siso}}, s2::RationalTF{Val{:siso}}) = /(s1, s2)
 
-/{T,U}(s::RationalTF{Val{T},Val{:cont},Val{U}}, g) = /(s, tf(g))
-/{T,U}(s::RationalTF{Val{T},Val{:disc},Val{U}}, g) = /(s, tf(g, zero(Float64)))
-/{T,U}(g, s::RationalTF{Val{T},Val{:cont},Val{U}}) = /(tf(g), s)
-/{T,U}(g, s::RationalTF{Val{T},Val{:disc},Val{U}}) = /(tf(g, zero(Float64)), s)
+/{T,S,U}(s::RationalTF{Val{T},Val{S},Val{U}}, g::Union{Real,AbstractMatrix})  =
+  /(s, convert(typeof(s), g))
+/{T,S,U}(g::Union{Real,AbstractMatrix}, s::RationalTF{Val{T},Val{S},Val{U}})  =
+  /(convert(typeof(s), g), s)
 
 ./(s::RationalTF{Val{:siso}}, g::Real)    = /(s, g)
 ./(g::Real, s::RationalTF{Val{:siso}})    = /(g, s)

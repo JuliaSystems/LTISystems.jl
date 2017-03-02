@@ -115,8 +115,8 @@ ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::Real = zero(Float
 ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::Real, Ts::Real)    =
   StateSpace(A, B, C, D, Ts)
 
-ss(D::Real)           = StateSpace(zeros(0,0), zeros(0,1), zeros(1,0), D)
-ss(D::Real, Ts::Real) = StateSpace(zeros(0,0), zeros(0,1), zeros(1,0), D, Ts)
+ss{T<:Real}(D::T)           = StateSpace(zeros(T,0,0), zeros(T,0,1), zeros(T,1,0), D)
+ss{T<:Real}(D::T, Ts::Real) = StateSpace(zeros(T,0,0), zeros(T,0,1), zeros(T,1,0), D, Ts)
 
 # MIMO
 ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix)    =
@@ -139,10 +139,10 @@ function ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix,
   StateSpace(A, B, C, d, Ts)
 end
 
-ss(D::AbstractMatrix)           = StateSpace(zeros(0,0), zeros(0, size(D,2)),
-  zeros(size(D,1), 0), D)
-ss(D::AbstractMatrix, Ts::Real) = StateSpace(zeros(0,0), zeros(0, size(D,2)),
-  zeros(size(D,1), 0), D, Ts)
+ss{T<:Real}(D::AbstractMatrix{T})           = StateSpace(zeros(T,0,0),
+  zeros(T,0,size(D,2)), zeros(T,size(D,1),0), D)
+ss{T<:Real}(D::AbstractMatrix{T}, Ts::Real) = StateSpace(zeros(T,0,0),
+  zeros(T,0,size(D,2)), zeros(T,size(D,1),0), D, Ts)
 
 # Catch-all for convenience when dealing with scalars, vectors, etc.
 function _reshape(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
@@ -228,13 +228,15 @@ getindex(s::StateSpace{Val{:mimo}}, ::Colon, ::Colon) = s[1:s.ny,1:s.nu]
 endof(s::StateSpace{Val{:mimo}})                      = endof(s.D)
 
 # Conversion and promotion
-promote_rule{T<:Real,S}(::Type{T}, ::Type{StateSpace{Val{:siso},Val{S}}}) =
-  StateSpace{Val{:siso},Val{S}}
-promote_rule{T<:AbstractMatrix,S}(::Type{T}, ::Type{StateSpace{Val{:mimo},Val{S}}}) =
-  StateSpace{Val{:mimo},Val{S}}
+promote_rule{T1<:Real,T2,S,M1,M2,M3,M4}(::Type{T1},
+  ::Type{StateSpace{Val{T2},Val{S},M1,M2,M3,M4}}) = StateSpace{Val{T2},Val{S}}
+promote_rule{T<:AbstractMatrix,S,M1,M2,M3,M4}(::Type{T},
+  ::Type{StateSpace{Val{:mimo},Val{S},M1,M2,M3,M4}}) = StateSpace{Val{:mimo},Val{S}}
 
 convert(::Type{StateSpace{Val{:siso},Val{:cont}}}, g::Real) = ss(g)
 convert(::Type{StateSpace{Val{:siso},Val{:disc}}}, g::Real) = ss(g, zero(Float64))
+convert(::Type{StateSpace{Val{:mimo},Val{:cont}}}, g::Real) = ss(fill(g,1,1))
+convert(::Type{StateSpace{Val{:mimo},Val{:disc}}}, g::Real) = ss(fill(g,1,1), zero(Float64))
 convert(::Type{StateSpace{Val{:mimo},Val{:cont}}}, g::AbstractMatrix) = ss(g)
 convert(::Type{StateSpace{Val{:mimo},Val{:disc}}}, g::AbstractMatrix) = ss(g, zero(Float64))
 
@@ -385,10 +387,10 @@ end
 
 .+(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = +(s1, s2)
 
-+{T}(s::StateSpace{Val{T},Val{:cont}}, g) = +(s, ss(g))
-+{T}(s::StateSpace{Val{T},Val{:disc}}, g) = +(s, ss(g, zero(Float64)))
-+{T}(g, s::StateSpace{Val{T},Val{:cont}}) = +(ss(g), s)
-+{T}(g, s::StateSpace{Val{T},Val{:disc}}) = +(ss(g, zero(Float64)), s)
++{T,S}(s::StateSpace{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
+  +(s, convert(typeof(s), g))
++{T,S}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{S}}) =
+  +(convert(typeof(s), g), s)
 
 .+(s::StateSpace{Val{:siso}}, g::Real)    = +(s, g)
 .+(g::Real, s::StateSpace{Val{:siso}})    = +(g, s)
@@ -398,10 +400,10 @@ end
 
 .-(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = -(s1, s2)
 
--{T}(s::StateSpace{Val{T},Val{:cont}}, g) = -(s, ss(g))
--{T}(s::StateSpace{Val{T},Val{:disc}}, g) = -(s, ss(g, zero(Float64)))
--{T}(g, s::StateSpace{Val{T},Val{:cont}}) = -(ss(g), s)
--{T}(g, s::StateSpace{Val{T},Val{:disc}}) = -(ss(g, zero(Float64)), s)
+-{T,S}(s::StateSpace{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
+  -(s, convert(typeof(s), g))
+-{T,S}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{S}}) =
+  -(convert(typeof(s), g), s)
 
 .-(s::StateSpace{Val{:siso}}, g::Real)    = -(s, g)
 .-(g::Real, s::StateSpace{Val{:siso}})    = -(g, s)
@@ -411,7 +413,7 @@ function _ssseries{T1,T2,S}(s1::StateSpace{Val{T1},Val{S}},
   s2::StateSpace{Val{T2},Val{S}})
   # Remark: s1*s2 implies u -> s2 -> s1 -> y
 
-  if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts == zero(s2.Ts)
+  if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts ≠ zero(s2.Ts)
     warn("series(s1,s2): Sampling time mismatch")
     throw(DomainError())
   end
@@ -458,10 +460,10 @@ end
 
 .*(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = *(s1, s2)
 
-*{T}(s::StateSpace{Val{T},Val{:cont}}, g) = *(s, ss(g))
-*{T}(s::StateSpace{Val{T},Val{:disc}}, g) = *(s, ss(g, zero(Float64)))
-*{T}(g, s::StateSpace{Val{T},Val{:cont}}) = *(ss(g), s)
-*{T}(g, s::StateSpace{Val{T},Val{:disc}}) = *(ss(g, zero(Float64)), s)
+*{T,S}(s::StateSpace{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
+  *(s, convert(typeof(s), g))
+*{T,S}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{S}}) =
+  *(convert(typeof(s), g), s)
 
 .*(s::StateSpace{Val{:siso}}, g::Real)    = *(s, g)
 .*(g::Real, s::StateSpace{Val{:siso}})    = *(g, s)
@@ -471,10 +473,10 @@ end
 
 ./(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = /(s1, s2)
 
-/{T}(s::StateSpace{Val{T},Val{:cont}}, g) = /(s, ss(g))
-/{T}(s::StateSpace{Val{T},Val{:disc}}, g) = /(s, ss(g, zero(Float64)))
-/{T}(g, s::StateSpace{Val{T},Val{:cont}}) = /(ss(g), s)
-/{T}(g, s::StateSpace{Val{T},Val{:disc}}) = /(ss(g, zero(Float64)), s)
+/{T,S}(s::StateSpace{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
+  /(s, convert(typeof(s), g))
+/{T,S}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{S}}) =
+  /(convert(typeof(s), g), s)
 
 ./(s::StateSpace{Val{:siso}}, g::Real)    = /(s, g)
 ./(g::Real, s::StateSpace{Val{:siso}})    = /(g, s)
