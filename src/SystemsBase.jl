@@ -8,7 +8,7 @@ using RationalFunctions
 import RationalFunctions: poles
 
 # PolynomialMatrices-related things
-# using PolynomialMatrices
+using PolynomialMatrices
 
 # Plotting recipes
 using RecipesBase
@@ -74,11 +74,12 @@ export
 include("types/system/ltisystem.jl")
 include("types/system/rationaltf.jl")
 include("types/system/statespace.jl")
-# include("types/system/mfd.jl")
+include("types/system/mfd.jl")
 
 # Conversions
-# include("conversions/mfd2ss.jl")
-# include("conversions/ss2mfd.jl")
+#include("conversions/mfd2ss.jl")
+#include("conversions/ss2mfd.jl")
+
 
 # Response types
 # include("types/response/systemresponse.jl")

@@ -4,7 +4,7 @@
 # realization (Kailath, 1980, Section 6.4.1).
 # NOTE: Base this function on the SLICOT routine TC04AD.
 # NOTE: Is it necessary to make a SISO version of this function?
-function _mfd2ss{S,M1,M2}(mfd::MFD{Siso{false},S,Lfd{false},M1,M2})
+function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:rfd},M1,M2})
 
   Den, Num  = colred(mfd.D,mfd.N)
   kden, Phc = high_col_deg_matrix(Den)
@@ -82,7 +82,7 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Siso{false},S,Lfd{false},M1,M2})
 
   return A, B, C, D
 end
-function _mfd2ss{S,M1,M2}(mfd::MFD{Siso{false},S,Lfd{true},M1,M2})
+function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Lfd{true},M1,M2})
 
   Den, Num  = rowred(mfd.D,mfd.N)
   kden, Phr = high_row_deg_matrix(Den)
@@ -160,5 +160,5 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Siso{false},S,Lfd{true},M1,M2})
 
   return A, B, C, D
 end
-ss(mfd::MFD{Siso{false},Continuous{true}}) = ss(_mfd2ss(mfd)...)
-ss(mfd::MFD{Siso{false},Continuous{false}}) = ss(_mfd2ss(mfd)...,mfd.Ts)
+ss(mfd::MFD{Val{:mimo},Val{:cont}}) = ss(_mfd2ss(mfd)...)
+ss(mfd::MFD{Val{:mimo},Val{:disc}}) = ss(_mfd2ss(mfd)...,mfd.Ts)

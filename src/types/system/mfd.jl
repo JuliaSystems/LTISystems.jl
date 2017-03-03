@@ -1,11 +1,7 @@
-# Value type to differentiate between MFD of left and right type
-immutable Lfd{T}
-end
-
 # Parameters:
-#   T:  Siso{true} or Siso{false}
-#   S:  Continuous{true} or Continuous{false}
-#   L:  Lfd{true} or Lfd{false}
+#   T:  Val{:siso} or Val{:mimo}
+#   S:  Val{:cont} or Val{:disc}
+#   L:  Val{:lfd} or Val{:mfd}
 #   M1: Type of numerator polynomial matrix
 #   M2: Type of denominator polynomial matrix
 #   N:  Numerator polynomial matrix
@@ -24,29 +20,29 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   Ts::Float64
 
   # Continuous-time, single-input-single-output MFD model
-  @compat function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, ::Type{Lfd{L}})
+  @compat function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, ::Type{Val{L}})
     mfdcheck(N,D)
-    new{Siso{true},Continuous{true},Lfd{L},M1,M2}(N, D, 1, 1, zero(Float64))
+    new{Val{:siso},Val{:cont},Val{L},M1,M2}(N, D, 1, 1, zero(Float64))
   end
 
   # Discrete-time, single-input-single-output MFD model
-  @compat function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, Ts::Real, ::Type{Lfd{L}})
+  @compat function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
     mfdcheck(N,D,Ts)
-    new{Siso{true},Continuous{false},Lfd{L},M1,M2}(N, D, 1, 1, convert(Float64, Ts))
+    new{Val{:siso},Val{:disc},Val{L},M1,M2}(N, D, 1, 1, convert(Float64, Ts))
   end
 
   # Continuous-time, multi-input-multi-output MFD model
   @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
-    M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, ::Type{Lfd{L}})
-    ny, nu = mfdcheck(N, D, Lfd{L})
-    new{Siso{false},Continuous{true},Lfd{L},M1,M2}(N, D, nu, ny, zero(Float64))
+    M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, ::Type{Val{L}})
+    ny, nu = mfdcheck(N, D, Val{L})
+    new{Val{:mimo},Val{:cont},Val{L},M1,M2}(N, D, nu, ny, zero(Float64))
   end
 
   # Discrete-time, multi-input-multi-output MFD model
   @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
-    M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, Ts::Real, ::Type{Lfd{L}})
-    ny, nu = mfdcheck(N, D, Lfd{L}, Ts)
-    new{Siso{false},Continuous{false},Lfd{L},M1,M2}(N, D, nu, ny, convert(Float64, Ts))
+    M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
+    ny, nu = mfdcheck(N, D, Val{L}, Ts)
+    new{Val{:mimo},Val{:disc},Val{L},M1,M2}(N, D, nu, ny, convert(Float64, Ts))
   end
 
 end
@@ -57,37 +53,37 @@ end
 
 # Enforce rational transfer function type invariance
 function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
-  N::M1, D::M2, ::Type{Lfd{true}})
+  N::M1, D::M2, ::Type{Val{:lfd}})
   @assert size(N,1) == size(D,1) "MFD: size(N,1) ≠ size(D,1)"
   @assert size(D,1) == size(D,2) "MFD: size(D,1) ≠ size(D,2)"
 
   return size(N,1), size(N,2)
 end
 function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
-  N::M1, D::M2, ::Type{Lfd{false}})
+  N::M1, D::M2, ::Type{Val{:rfd}})
   @assert size(N,2) == size(D,2) "MFD: size(N,2) ≠ size(D,2)"
   @assert size(D,1) == size(D,2) "MFD: size(D,1) ≠ size(D,2)"
 
   return size(N,1), size(N,2)
 end
 function mfdcheck{T,M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
-  N::M1, D::M2, ::Type{Lfd{T}}, Ts::Real)
+  N::M1, D::M2, ::Type{Val{T}}, Ts::Real)
   @assert Ts ≥ zero(Ts) && !isinf(Ts) "MFD: Ts must be non-negative real number"
-  return mfdcheck(N, D, Lfd{T})
+  return mfdcheck(N, D, Val{T})
 end
 
 # Outer constructors
-lfd(N::Poly, D::Poly)           = MFD(N, D, Lfd{true})
-lfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), Lfd{true})
+lfd(N::Poly, D::Poly)           = MFD(N, D, Val{:lfd})
+lfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), Val{:lfd})
 lfd{M1<:PolyMatrix,M2<:PolyMatrix}(N::M1, D::M2) =
-  MFD(N, D, Lfd{true})
+  MFD(N, D, Val{:lfd})
 lfd{M1<:PolyMatrix,M2<:PolyMatrix}(N::M1, D::M2, Ts::Real) =
-  MFD(N, D, convert(Float64, Ts), Lfd{true})
+  MFD(N, D, convert(Float64, Ts), Val{:lfd})
 
-rfd(N::Poly, D::Poly) = MFD(N, D, Lfd{false})
-rfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), Lfd{false})
-rfd(N::PolyMatrix, D::PolyMatrix) = MFD(N, D, Lfd{false})
-rfd(N::PolyMatrix, D::PolyMatrix, Ts::Real) = MFD(N, D, convert(Float64, Ts), Lfd{false})
+rfd(N::Poly, D::Poly) = MFD(N, D, Val{:rfd})
+rfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), Val{:rfd})
+rfd(N::PolyMatrix, D::PolyMatrix) = MFD(N, D, Val{:rfd})
+rfd(N::PolyMatrix, D::PolyMatrix, Ts::Real) = MFD(N, D, convert(Float64, Ts), Val{:rfd})
 
 # Vector constructors
 lfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2}) =
@@ -133,22 +129,23 @@ end
 
 # Interfaces
 samplingtime(s::MFD) = s.Ts
-islfd{T,S,L}(s::MFD{T,S,Lfd{L}}) = L::Bool
-isrfd{T,S,L}(s::MFD{T,S,Lfd{L}}) = !L::Bool
+islfd{T,S,L}(s::MFD{T,S,Val{L}})  = false
+islfd{T,S}(s::MFD{T,S,Val{:lfd}}) = true
+isrfd{T,S,L}(s::MFD{T,S,Val{L}})  = !islfd(s)
 num(s::MFD) = s.N
 den(s::MFD) = s.D
 
 # Think carefully about how to implement numstates
 numstates(s::MFD)    = 1#numstates(ss(s))
 # Currently, we only allow for proper systems
-numstates(s::MFD{Siso{true}}) = degree(s.D)
+numstates(s::MFD{Val{:siso}}) = degree(s.D)
 
 numinputs(s::MFD)    = s.nu
 numoutputs(s::MFD)   = s.ny
 
 # Dimension information
-ndims(s::MFD{Siso{true}})  = 1
-ndims(s::MFD{Siso{false}}) = 2
+ndims(s::MFD{Val{:siso}})  = 1
+ndims(s::MFD{Val{:mimo}}) = 2
 size(s::MFD)               = size(s.N)
 size(s::MFD, dim::Int)     = size(s.N, dim)
 size(s::MFD, dims::Int...) = size(s.N, dims)
@@ -160,22 +157,22 @@ size(s::MFD, dims::Int...) = size(s.N, dims)
 # TODO
 
 # Printing functions
-summary(s::MFD{Siso{true},Continuous{true}})   =
+summary(s::MFD{Val{:siso},Val{:cont}})   =
   string("tf(nx=", numstates(s), ")")
-summary(s::MFD{Siso{true},Continuous{false}})  =
+summary(s::MFD{Val{:siso},Val{:disc}})  =
   string("tf(nx=", numstates(s), ",Ts=", s.Ts, ")")
-summary(s::MFD{Siso{false},Continuous{true}})  =
+summary(s::MFD{Val{:mimo},Val{:cont}})  =
   string("tf(nx=", numstates(s), ",nu=", s.nu, ",ny=", s.ny, ")")
-summary(s::MFD{Siso{false},Continuous{false}}) =
+summary(s::MFD{Val{:mimo},Val{:disc}}) =
   string("tf(nx=", numstates(s), ",nu=", s.nu, ",ny=", s.ny, ",Ts=", s.Ts, ")")
 
 showcompact(io::IO, s::MFD) = print(io, summary(s))
 
-function show{T}(io::IO, s::MFD{T,Continuous{true}})
+function show{T}(io::IO, s::MFD{T,Val{:cont}})
   # TODO
 end
 
-function show{T}(io::IO, s::MFD{T,Continuous{false}})
+function show{T}(io::IO, s::MFD{T,Val{:disc}})
   # TODO
 end
 
@@ -183,39 +180,93 @@ function showall(io::IO, s::MFD)
   # TODO
 end
 
-# Conversion and promotion
-promote_rule{T<:Real,S}(::Type{T}, ::Type{MFD{Siso{true},S}}) =
-  MFD{Siso{true},S}
-promote_rule{T<:AbstractMatrix,S}(::Type{T}, ::Type{MFD{Siso{false},S}}) =
-  MFD{Siso{false},S}
+# # Conversion and promotion
+# promote_rule{T<:Real,S}(::Type{T}, ::Type{MFD{Val{:siso},S}}) =
+#   MFD{Val{:siso},S}
+# promote_rule{T<:AbstractMatrix,S}(::Type{T}, ::Type{MFD{Val{:mimo},S}}) =
+#   MFD{Val{:mimo},S}
+#
+# convert(::Type{RationalTF{Val{:siso},Val{:cont}}},
+#   s::MFD{Val{:siso},Val{:cont}}) = tf(s.N, s.D)
+#
+# convert(::Type{MFD{Val{:siso},Val{:cont}}}, g::Real)             =
+#   tf(g)
+# convert(::Type{MFD{Val{:siso},Val{:disc}}}, g::Real)            =
+#   tf(g, zero(Float64))
+# convert(::Type{MFD{Val{:mimo},Val{:cont}}}, g::AbstractMatrix)  =
+#   tf(g)
+# convert(::Type{MFD{Val{:mimo},Val{:disc}}}, g::AbstractMatrix) =
+#   tf(g, zero(Float64))
+#
+# # Multiplicative and additive identities (meaningful only for SISO)
+# one(::Type{MFD{Val{:siso},Val{:cont}}})    =
+#   tf(one(Int8))
+# one(::Type{MFD{Val{:siso},Val{:disc}}})   =
+#   tf(one(Int8), zero(Float64))
+# zero(::Type{MFD{Val{:siso},Val{:cont}}})   =
+#   tf(zero(Int8))
+# zero(::Type{MFD{Val{:siso},Val{:disc}}})  =
+#   tf(zero(Int8), zero(Float64))
+#
+# one(s::MFD{Val{:siso},Val{:cont}})   =
+#   tf(one(eltype(s.num)), one(eltype(s.den)))
+# one(s::MFD{Val{:siso},Val{:disc}})  =
+#   tf(one(eltype(s.num)), one(eltype(s.den)), zero(Float64))
+# zero(s::MFD{Val{:siso},Val{:cont}})  =
+#   tf(zero(eltype(s.num)), one(eltype(s.den)))
+# zero(s::MFD{Val{:siso},Val{:disc}}) =
+#   tf(zero(eltype(s.num)), one(eltype(s.den)), zero(Float64))
 
-convert(::Type{RationalTF{Siso{true},Continuous{true}}},
-  s::MFD{Siso{true},Continuous{true}}) = tf(s.N, s.D)
+lfd(s::MFD{Val{:siso},Val{:cont},Val{:rfd}}) = lfd(s.N,s.D)
+lfd(s::MFD{Val{:siso},Val{:disc},Val{:rfd}}) = lfd(s.N,s.D,s.Ts)
+lfd(s::MFD{Val{:mimo},Val{:cont},Val{:rfd}}) = lfd(_rfd2lfd(s)...)
+lfd(s::MFD{Val{:mimo},Val{:disc},Val{:rfd}}) = lfd(_rfd2lfd(s)...,s.Ts)
+lfd{T,S}(s::MFD{T,S,Val{:lfd}})              = s
 
-convert(::Type{MFD{Siso{true},Continuous{true}}}, g::Real)             =
-  tf(g)
-convert(::Type{MFD{Siso{true},Continuous{false}}}, g::Real)            =
-  tf(g, zero(Float64))
-convert(::Type{MFD{Siso{false},Continuous{true}}}, g::AbstractMatrix)  =
-  tf(g)
-convert(::Type{MFD{Siso{false},Continuous{false}}}, g::AbstractMatrix) =
-  tf(g, zero(Float64))
+rfd(s::MFD{Val{:siso},Val{:cont},Val{:lfd}}) = rfd(s.N,s.D)
+rfd(s::MFD{Val{:siso},Val{:disc},Val{:lfd}}) = rfd(s.N,s.D,s.Ts)
+rfd(s::MFD{Val{:mimo},Val{:cont},Val{:lfd}}) = rfd(_lfd2rfd(s)...)
+rfd(s::MFD{Val{:mimo},Val{:disc},Val{:lfd}}) = rfd(_lfd2rfd(s)...,s.Ts)
+rfd{T,S}(s::MFD{T,S,Val{:rfd}})              = s
 
-# Multiplicative and additive identities (meaningful only for SISO)
-one(::Type{MFD{Siso{true},Continuous{true}}})    =
-  tf(one(Int8))
-one(::Type{MFD{Siso{true},Continuous{false}}})   =
-  tf(one(Int8), zero(Float64))
-zero(::Type{MFD{Siso{true},Continuous{true}}})   =
-  tf(zero(Int8))
-zero(::Type{MFD{Siso{true},Continuous{false}}})  =
-  tf(zero(Int8), zero(Float64))
+function _lfd2rfd{T,S}(s::MFD{T,S,Val{:lfd}})
+  n,m = size(s)
+  p = PolyMatrix(hcat(-s.N, s.D))
+  L,U = ltriang(p)
 
-one(s::MFD{Siso{true},Continuous{true}})   =
-  tf(one(eltype(s.num)), one(eltype(s.den)))
-one(s::MFD{Siso{true},Continuous{false}})  =
-  tf(one(eltype(s.num)), one(eltype(s.den)), zero(Float64))
-zero(s::MFD{Siso{true},Continuous{true}})  =
-  tf(zero(eltype(s.num)), one(eltype(s.den)))
-zero(s::MFD{Siso{true},Continuous{false}}) =
-  tf(zero(eltype(s.num)), one(eltype(s.den)), zero(Float64))
+  D = U[1:m,n+1:n+m]
+  N = U[m+1:n+m,n+1:n+m]
+  return N,D
+end
+
+function _rfd2lfd{T,S}(s::MFD{T,S,Val{:rfd}})
+  n,m = size(s)
+  p = PolyMatrix(vcat(-s.D, s.N))
+  _,U = rtriang(p)
+
+  N = U[m+1:n+m,1:m]
+  D = U[m+1:n+m,m+1:n+m]
+  return N,D
+end
+
+## Comparison
+=={T,S,L}(s1::MFD{T,S,L}, s2::MFD{T,S,L}) =
+  (s1.N == s2.N) && (s1.D == s2.D) && (s1.Ts == s2.Ts)
+=={T1,S1,L1,T2,S2,L2}(s1::MFD{T1,S1,L1}, s2::MFD{T2,S2,L2}) = false
+
+hash(s::MFD, h::UInt)     = hash(s.D, hash(S.N, hash(S.Ts, h)))
+isequal(s1::MFD, s2::MFD) = (hash(s1) == hash(s2))
+
+function isapprox{T,S,L1,L2,M1,M2,M3,M4}(s1::MFD{T,S,L1,M1,M2}, s2::MFD{T,S,L2,M3,M4};
+  rtol::Real=Base.rtoldefault(promote_type(eltype(eltype(s1.N)),eltype(eltype(s1.D)),eltype(eltype(s2.N)),eltype(eltype(s2.D)))),
+  atol::Real=0, norm::Function=vecnorm)
+  isapprox(s1.Ts, s2.Ts) || return false # quick exit
+  lfd1 = lfd(s1)
+  lfd2 = lfd(s2)
+
+  D1, U = hermite(lfd1.D)
+  N1    = lfd1.N*U
+  D2, U = hermite(lfd2.D)
+  N2    = lfd2.N*U
+  return isapprox(D1, D2; rtol=rtol, atol=atol, norm=norm) && isapprox(N1,N2; rtol=rtol, atol=atol, norm=norm)
+end
