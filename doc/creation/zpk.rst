@@ -1,2 +1,0 @@
-Zero-Pole-Gain Models
-=====================

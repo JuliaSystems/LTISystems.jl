@@ -1,2 +1,2 @@
-Interface for Abstract Types
+Matrix Fraction Descriptions
 ============================

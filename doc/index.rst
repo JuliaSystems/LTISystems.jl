@@ -4,33 +4,22 @@ Welcome to SystemsBase.jl's documentation!
 .. toctree::
     :maxdepth: 2
     :glob:
-    :caption: Type Creation
+    :caption: Concrete Types
 
-    creation/tf
-    creation/zpk
-    creation/ss
-    creation/mimo
-
-.. toctree::
-    :maxdepth: 2
-    :glob:
-    :caption: Mathematical Operations
-
-    math/operations
+    types/tf
+    types/ss
+    types/mfd
 
 .. toctree::
     :maxdepth: 2
     :caption: Basic Functionality
 
-    basic-functionality/polynomial
-    basic-functionality/interconnect
-    basic-functionality/identity
-    basic-functionality/iteration
+    basics/math
+    basics/interconnect
+    basics/methods
 
 .. toctree::
     :maxdepth: 2
-    :caption: Note on Type Hierarchy
+    :caption: Notes for Contributors
 
-    type-hierarchy/abstract
-    type-hierarchy/concrete
-    type-hierarchy/interface
+    contrib/interface
