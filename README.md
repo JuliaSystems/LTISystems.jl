@@ -1,7 +1,11 @@
 # SystemsBase
 
-[![Unix][unix-img]][unix-link] [![Windows][win-img]][win-link]
-[![Coveralls][ca-img]][ca-link] [![Codecov][cc-img]][cc-link]
+[![Unix][unix-img]][unix-link]
+[![Windows][win-img]][win-link]
+[![Coveralls][ca-img]][ca-link]
+[![Codecov][cc-img]][cc-link]
+[![Documentation][docs-latest-img]][docs-latest-link]
+[![Gitter][gitter-img]][gitter-link]
 
 [unix-img]: https://img.shields.io/travis/JuliaSystems/SystemsBase.jl/master.svg?label=unix
 [unix-link]: https://travis-ci.org/JuliaSystems/SystemsBase.jl
@@ -11,6 +15,10 @@
 [ca-link]: https://coveralls.io/github/JuliaSystems/SystemsBase.jl?branch=master
 [cc-img]: https://img.shields.io/codecov/c/github/JuliaSystems/SystemsBase.jl/master.svg?label=codecov
 [cc-link]: https://codecov.io/gh/JuliaSystems/SystemsBase.jl?branch=master
+[docs-latest-img]: https://img.shields.io/badge/documentation-latest-blue.svg?colorB=1954a6
+[docs-latest-link]: https://systemsbase.readthedocs.io/en/latest
+[gitter-img]: https://img.shields.io/gitter/room/JuliaSystems/SystemsBase.jl.svg?colorB=1954a6
+[gitter-link]: https://gitter.im/JuliaSystems
 
 Core functionality for **identifying**, **analyzing** and **designing** control
 systems in `Julia`.

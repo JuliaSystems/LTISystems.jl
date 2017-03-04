@@ -16,6 +16,12 @@ matrix:
 
 notifications:
   email: false
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/e6ccfbfb740806f846c2
+    on_success: change
+    on_failure: change
+    on_start: never
 
 script:
   - julia -e 'Pkg.clone(pwd()); Pkg.build("SystemsBase")'
