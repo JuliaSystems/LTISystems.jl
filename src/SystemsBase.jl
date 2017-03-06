@@ -77,8 +77,8 @@ include("types/system/statespace.jl")
 include("types/system/mfd.jl")
 
 # Conversions
-#include("conversions/mfd2ss.jl")
-#include("conversions/ss2mfd.jl")
+include("conversions/mfd2ss.jl")
+include("conversions/ss2mfd.jl")
 
 
 # Response types
