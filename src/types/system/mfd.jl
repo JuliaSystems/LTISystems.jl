@@ -35,16 +35,19 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, ::Type{Val{L}})
     ny, nu = mfdcheck(N, D, Val{L})
-    new{Val{:mimo},Val{:cont},Val{L},M1,M2}(N, D, nu, ny, zero(Float64))
+    new{Val{:mimo},Val{:cont},Val{L},M1,M2}(PolyMatrix(coeffs(N), size(N), Val{:s}),
+      PolyMatrix(coeffs(D), size(D), Val{:s}), nu, ny, zero(Float64))
+    # should we do better checks than just converting the variable to the correct one?
   end
 
   # Discrete-time, multi-input-multi-output MFD model
   @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
     ny, nu = mfdcheck(N, D, Val{L}, Ts)
-    new{Val{:mimo},Val{:disc},Val{L},M1,M2}(N, D, nu, ny, convert(Float64, Ts))
+    new{Val{:mimo},Val{:disc},Val{L},M1,M2}(PolyMatrix(coeffs(N), size(N), Val{:z}),
+      PolyMatrix(coeffs(D), size(D), Val{:z}), nu, ny, convert(Float64, Ts))
+    # should we do better checks than just converting the variable to the correct one?
   end
-
 end
 
 function mfdcheck{T<:Real,S<:Real}(N::Poly{T}, D::Poly{S}, Ts::Real = zero(Float64))
@@ -89,11 +92,11 @@ rfd(N::PolyMatrix, D::PolyMatrix, Ts::Real) = MFD(N, D, convert(Float64, Ts), Va
 lfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2}) =
   lfd(Poly(reverse(N), :s), Poly(reverse(D), :s))
 lfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2}, Ts::Real) =
-  lfd(Poly(reverse(N), :s), Poly(reverse(D), :s), Ts)
+  lfd(Poly(reverse(N), :z), Poly(reverse(D), :z), Ts)
 rfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2}) =
   rfd(Poly(reverse(N), :s), Poly(reverse(D), :s))
 rfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2}, Ts::Real) =
-  rfd(Poly(reverse(N), :s), Poly(reverse(D), :s), Ts)
+  rfd(Poly(reverse(N), :z), Poly(reverse(D), :z), Ts)
 
 function lfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2},
   Ts::Real, var::Symbol)
@@ -136,87 +139,99 @@ num(s::MFD) = s.N
 den(s::MFD) = s.D
 
 # Think carefully about how to implement numstates
-numstates(s::MFD)    = 1#numstates(ss(s))
+numstates(s::MFD)               = 1 #numstates(ss(s))
 # Currently, we only allow for proper systems
-numstates(s::MFD{Val{:siso}}) = degree(s.D)
+numstates(s::MFD{Val{:siso}})   = degree(s.D)
 
-numinputs(s::MFD)    = s.nu
-numoutputs(s::MFD)   = s.ny
+numinputs(s::MFD)               = s.nu
+numoutputs(s::MFD)              = s.ny
 
 # Dimension information
-ndims(s::MFD{Val{:siso}})  = 1
-ndims(s::MFD{Val{:mimo}}) = 2
-size(s::MFD)               = size(s.N)
-size(s::MFD, dim::Int)     = size(s.N, dim)
-size(s::MFD, dims::Int...) = size(s.N, dims)
+ndims(s::MFD{Val{:siso}})       = 1
+ndims(s::MFD{Val{:mimo}})       = 2
+size(s::MFD)                    = size(s.N)
+size(s::MFD, d)                 = size(s.N, d)
 
-# Iteration interface (meaningful only for MIMO systems)
-# TODO
+## Iteration interface
+start(s::MFD{Val{:mimo}})       = start(s.N)
+next(s::MFD{Val{:mimo}}, state) = (s[state], state+1)
+done(s::MFD{Val{:mimo}}, state) = done(s.N, state)
 
-# Slicing (`getindex`) of MIMO systems
-# TODO
+eltype{S,M1}(::Type{MFD{Val{:mimo},Val{S},M1}}) =
+  MFD{Val{:siso},Val{S},M1}
 
-# Printing functions
-summary(s::MFD{Val{:siso},Val{:cont}})   =
-  string("tf(nx=", numstates(s), ")")
-summary(s::MFD{Val{:siso},Val{:disc}})  =
-  string("tf(nx=", numstates(s), ",Ts=", s.Ts, ")")
-summary(s::MFD{Val{:mimo},Val{:cont}})  =
-  string("tf(nx=", numstates(s), ",nu=", s.nu, ",ny=", s.ny, ")")
-summary(s::MFD{Val{:mimo},Val{:disc}}) =
-  string("tf(nx=", numstates(s), ",nu=", s.nu, ",ny=", s.ny, ",Ts=", s.Ts, ")")
+length(s::MFD{Val{:mimo}})      = length(s.N)
+size(s::MFD)                    = size(s.N)
+size(s::MFD, d)                 = size(s.N, d)
 
-showcompact(io::IO, s::MFD) = print(io, summary(s))
-
-function show{T}(io::IO, s::MFD{T,Val{:cont}})
-  # TODO
+# Indexing of MIMO systems
+function getindex(s::MFD{Val{:mimo},Val{:cont},Val{:lfd}}, I...)
+  @boundscheck checkbounds(s.N, I...)
+  lfd(ss(s)[I...])
 end
 
-function show{T}(io::IO, s::MFD{T,Val{:disc}})
-  # TODO
+function getindex(s::MFD{Val{:mimo},Val{:cont},Val{:rfd}}, I...)
+  @boundscheck checkbounds(s.N, I...)
+  rfd(ss(s)[I...])
 end
 
-function showall(io::IO, s::MFD)
-  # TODO
-end
+endof(s::MFD{Val{:mimo}})               = endof(s.N)
 
-# # Conversion and promotion
-# promote_rule{T<:Real,S}(::Type{T}, ::Type{MFD{Val{:siso},S}}) =
-#   MFD{Val{:siso},S}
-# promote_rule{T<:AbstractMatrix,S}(::Type{T}, ::Type{MFD{Val{:mimo},S}}) =
-#   MFD{Val{:mimo},S}
-#
-# convert(::Type{RationalTF{Val{:siso},Val{:cont}}},
-#   s::MFD{Val{:siso},Val{:cont}}) = tf(s.N, s.D)
-#
-# convert(::Type{MFD{Val{:siso},Val{:cont}}}, g::Real)             =
-#   tf(g)
-# convert(::Type{MFD{Val{:siso},Val{:disc}}}, g::Real)            =
-#   tf(g, zero(Float64))
-# convert(::Type{MFD{Val{:mimo},Val{:cont}}}, g::AbstractMatrix)  =
-#   tf(g)
-# convert(::Type{MFD{Val{:mimo},Val{:disc}}}, g::AbstractMatrix) =
-#   tf(g, zero(Float64))
-#
-# # Multiplicative and additive identities (meaningful only for SISO)
-# one(::Type{MFD{Val{:siso},Val{:cont}}})    =
-#   tf(one(Int8))
-# one(::Type{MFD{Val{:siso},Val{:disc}}})   =
-#   tf(one(Int8), zero(Float64))
-# zero(::Type{MFD{Val{:siso},Val{:cont}}})   =
-#   tf(zero(Int8))
-# zero(::Type{MFD{Val{:siso},Val{:disc}}})  =
-#   tf(zero(Int8), zero(Float64))
-#
-# one(s::MFD{Val{:siso},Val{:cont}})   =
-#   tf(one(eltype(s.num)), one(eltype(s.den)))
-# one(s::MFD{Val{:siso},Val{:disc}})  =
-#   tf(one(eltype(s.num)), one(eltype(s.den)), zero(Float64))
-# zero(s::MFD{Val{:siso},Val{:cont}})  =
-#   tf(zero(eltype(s.num)), one(eltype(s.den)))
-# zero(s::MFD{Val{:siso},Val{:disc}}) =
-#   tf(zero(eltype(s.num)), one(eltype(s.den)), zero(Float64))
+# Conversion and promotion
+promote_rule{T<:Real,S,L}(::Type{T}, ::Type{MFD{Val{:siso},S,L}}) =
+  MFD{Val{:siso},S,L}
+promote_rule{T<:AbstractMatrix,S,L}(::Type{T}, ::Type{MFD{Val{:mimo},S,L}}) =
+  MFD{Val{:mimo},S,L}
 
+convert(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd}}}, g::Real)            =
+  lfd(Poly(g,:s), Poly(one(g),:s))
+convert(::Type{MFD{Val{:siso},Val{:disc},Val{:lfd}}}, g::Real)            =
+  lfd(Poly(g,:z), Poly(one(g),:z), zero(Float64))
+convert(::Type{MFD{Val{:mimo},Val{:cont},Val{:lfd}}}, g::AbstractMatrix)  =
+  lfd(PolyMatrix(g, Val{:s}), PolyMatrix(eye(eltype(g), size(g,1), size(g,1))))
+convert(::Type{MFD{Val{:mimo},Val{:disc},Val{:lfd}}}, g::AbstractMatrix)  =
+  lfd(PolyMatrix(g, Val{:z}), PolyMatrix(eye(eltype(g), size(g,1), size(g,1))), zero(Float64))
+
+convert(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd}}}, g::Real)            =
+  rfd(Poly(g,:s), Poly(one(g),:s))
+convert(::Type{MFD{Val{:siso},Val{:disc},Val{:rfd}}}, g::Real)            =
+  rfd(Poly(g,:z), Poly(one(g),:z), zero(Float64))
+convert(::Type{MFD{Val{:mimo},Val{:cont},Val{:rfd}}}, g::AbstractMatrix)  =
+  rfd(PolyMatrix(g, Val{:s}), PolyMatrix(eye(eltype(g), size(g,2), size(g,2))))
+convert(::Type{MFD{Val{:mimo},Val{:disc},Val{:rfd}}}, g::AbstractMatrix)  =
+  rfd(PolyMatrix(g, Val{:z}), PolyMatrix(eye(eltype(g), size(g,2), size(g,2))), zero(Float64))
+
+# conversions betwwen lfd and rfd
+convert{S,T,L}(::Type{RationalTF{Val{S},Val{T},Val{:lfd}}},
+  s::MFD{Val{S},Val{T},Val{L}}) = lfd(s)
+convert{S,T,L}(::Type{RationalTF{Val{S},Val{T},Val{:rfd}}},
+  s::MFD{Val{S},Val{T},Val{L}}) = rfd(s)
+
+# Multiplicative and additive identities (meaningful only for SISO)
+one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}})  =
+  lfd(one(Int8))
+one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}})  =
+  lfd(one(Int8), zero(Float64))
+zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}}) =
+  lfd(zero(Int8))
+zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}}) =
+  tf(zero(Int8), zero(Float64))
+
+one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}})  =
+  rfd(one(Int8))
+one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}})  =
+  rfd(one(Int8), zero(Float64))
+zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}}) =
+  rfd(zero(Int8))
+zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}}) =
+  tf(zero(Int8), zero(Float64))
+
+one{T,S,L,M1,M2}(s::MFD{Val{T},Val{S},Val{L},M1,M2})   =
+  one(typeof(s))
+zero{T,S,L,M1,M2}(s::MFD{Val{T},Val{S},Val{L},M1,M2})  =
+  zero(typeof(s))
+
+# conversions between lfd and rfd
 lfd(s::MFD{Val{:siso},Val{:cont},Val{:rfd}}) = lfd(s.N,s.D)
 lfd(s::MFD{Val{:siso},Val{:disc},Val{:rfd}}) = lfd(s.N,s.D,s.Ts)
 lfd(s::MFD{Val{:mimo},Val{:cont},Val{:rfd}}) = lfd(_rfd2lfd(s)...)
@@ -248,6 +263,159 @@ function _rfd2lfd{T,S}(s::MFD{T,S,Val{:rfd}})
   D = U[m+1:n+m,m+1:n+m]
   return N,D
 end
+
+function inv{M<:MFD}(s::M)
+  _mfdinvcheck(s)
+  _inv(s)
+end
+
+_inv{T,L}(s::MFD{Val{T},Val{:cont},Val{L}}) = lfd(copy(s.D), copy(s.N))
+_inv{T,L}(s::MFD{Val{T},Val{:disc},Val{L}}) = lfd(copy(s.D), copy(s.N), s.Ts)
+
+function _mfdinvcheck(s::MFD)
+  if s.ny ≠ s.nu
+    warn("inv(sys): s.ny ≠ s.nu")
+    throw(DomainError())
+  end
+
+  if norm(det(s.N)) ≈ zero(eltype(s.N))
+    warn("inv(sys): sys is not invertible")
+    throw(DomainError())
+  end
+  _inv(s)
+end
+
+# Negative of a transfer-function model
+-{T}(s::MFD{Val{T},Val{:cont},Val{:lfd}}) = lfd(-s.N, copy(s.D))
+-{T}(s::MFD{Val{T},Val{:disc},Val{:lfd}}) = lfd(-s.N, copy(s.D), s.Ts)
+-{T}(s::MFD{Val{T},Val{:cont},Val{:rfd}}) = rfd(-s.N, copy(s.D))
+-{T}(s::MFD{Val{T},Val{:disc},Val{:rfd}}) = rfd(-s.N, copy(s.D), s.Ts)
+
+# Addition (parallel)
+function _mfdparallel{T1,T2,S,L}(s1::MFD{Val{T1},Val{S},Val{L}},
+  s2::MFD{Val{T2},Val{S},Val{L}})
+  if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts ≠ zero(s2.Ts)
+    warn("parallel(s1,s2): Sampling time mismatch")
+    throw(DomainError())
+  end
+
+  if size(s1,1) ≠ size(s2,1)
+    warn("parallel(s1,s2): size(s1,1) ≠ size(s2,1)")
+    throw(DomainError())
+  end
+
+  N = vcat(s1.N, s2.N)
+  D = hcat(vcat(s1.D, zeros(s1.D)), vcat(s2.D, zeros(s2.D)))
+
+  return N, D, max(s1.Ts, s2.Ts)
+end
+
+function +{T1,T2,L}(s1::MFD{Val{T1},Val{:cont},Val{L}},
+  s2::MFD{Val{T2},Val{:cont},Val{L}})
+  N, D, _ = _mfdparallel(s1, s2)
+  MFD(N, D, Val{L})
+end
+
+function +{T1,T2,L}(s1::MFD{Val{T1},Val{:disc},Val{L}},
+  s2::MFD{Val{T2},Val{:disc},Val{L}})
+  N, D, Ts = _mfdparallel(s1, s2)
+  MFD(N, D, Ts, Val{L})
+end
+
+function +{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:cont},Val{L1}},
+  s2::MFD{Val{T2},Val{:cont},Val{L2}})
+  N, D, _ = _mfdparallel(lfd(s1), lfd(s2))
+  lfd(N, D, Val{L})
+end
+
+function +{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:disc},Val{L1}},
+  s2::MFD{Val{T2},Val{:disc},Val{L2}})
+  N, D, Ts = _mfdparallel(lfd(s1), lfd(s2))
+  lfd(N, D, Ts, Val{L})
+end
+
+.+(s1::MFD{Val{:siso}}, s2::MFD{Val{:siso}}) = +(s1, s2)
+
++{T,S}(s::MFD{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
+  +(s, convert(typeof(s), g))
++{T,S}(g::Union{Real,AbstractMatrix}, s::MFD{Val{T},Val{S}}) =
+  +(convert(typeof(s), g), s)
+
+.+(s::MFD{Val{:siso}}, g::Real) = +(s, g)
+.+(g::Real, s::MFD{Val{:siso}}) = +(g, s)
+
+# Subtraction
+-(s1::MFD, s2::MFD) = +(s1, -s2)
+
+.-(s1::MFD{Val{:siso}}, s2::MFD{Val{:siso}}) = -(s1, s2)
+
+-{T,S}(s::MFD{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
+  -(s, convert(typeof(s), g))
+-{T,S}(g::Union{Real,AbstractMatrix}, s::MFD{Val{T},Val{S}}) =
+  -(convert(typeof(s), g), s)
+
+.-(s::MFD{Val{:siso}}, g::Real)    = -(s, g)
+.-(g::Real, s::MFD{Val{:siso}})    = -(g, s)
+
+# Multiplication
+function _mfdseries{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
+  s2::MFD{Val{T2},Val{S}})
+  # Remark: s1*s2 implies u -> s2 -> s1 -> y
+
+  if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts ≠ zero(s2.Ts)
+    warn("series(s1,s2): Sampling time mismatch")
+    throw(DomainError())
+  end
+
+  if s1.nu ≠ s2.ny
+    warn("series(s1,s2): s1.nu ≠ s2.ny")
+    throw(DomainError())
+  end
+
+  T = promote_type(eltype(s1.A), eltype(s1.B), eltype(s2.A), eltype(s2.C))
+
+  a = vcat(hcat(s1.A, s1.B*s2.C),
+        hcat(zeros(T, s2.nx, s1.nx), s2.A))
+  b = vcat(s1.B*s2.D, s2.B)
+  c = hcat(s1.C, s1.D*s2.C)
+  d = s1.D * s2.D
+
+  return a, b, c, d, max(s1.Ts, s2.Ts)
+end
+
+function *(s1::MFD{Val{:siso},Val{:cont}},
+  s2::MFD{Val{:siso},Val{:cont}})
+  a, b, c, d, _ = _ssseries(s1, s2)
+  MFD(a, b, c, d[1])
+end
+
+function *(s1::MFD{Val{:siso},Val{:disc}},
+  s2::MFD{Val{:siso},Val{:disc}})
+  a, b, c, d, Ts = _ssseries(s1, s2)
+  MFD(a, b, c, d[1], Ts)
+end
+
+function *{T1,T2}(s1::MFD{Val{T1},Val{:cont}},
+  s2::MFD{Val{T2},Val{:cont}})
+  a, b, c, d, _ = _ssseries(s1, s2)
+  MFD(a, b, c, d)
+end
+
+function *{T1,T2}(s1::MFD{Val{T1},Val{:disc}},
+  s2::MFD{Val{T2},Val{:disc}})
+  a, b, c, d, Ts = _ssseries(s1, s2)
+  MFD(a, b, c, d, Ts)
+end
+
+.*(s1::MFD{Val{:siso}}, s2::MFD{Val{:siso}}) = *(s1, s2)
+
+*{T,S}(s::MFD{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
+  *(s, convert(typeof(s), g))
+*{T,S}(g::Union{Real,AbstractMatrix}, s::MFD{Val{T},Val{S}}) =
+  *(convert(typeof(s), g), s)
+
+.*(s::MFD{Val{:siso}}, g::Real)    = *(s, g)
+.*(g::Real, s::MFD{Val{:siso}})    = *(g, s)
 
 ## Comparison
 =={T,S,L}(s1::MFD{T,S,L}, s2::MFD{T,S,L}) =

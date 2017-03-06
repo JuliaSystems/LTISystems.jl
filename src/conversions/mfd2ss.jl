@@ -73,7 +73,7 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:rfd},M1,M2})
         for l = 0:kden[j]-1
           C[i,start_j+l+1] -= Num.coeffs[knum[j]][i,j]*Den.coeffs[l][i,j]
         end
-        D[i,j] = Num.coeffs[knum[j]][i,j]*Phci[i,l]
+        D[i,j] = Num.coeffs[knum[j]][i,j]*Phci[i,j]
       end
 
       start_j += kden[j]
@@ -151,7 +151,7 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:lfd},M1,M2})
         for l = 0:kden[j]-1
           B[start_j+l+1,i] -= Num.coeffs[knum[j]][j,i]*Den.coeffs[l][j,i]
         end
-        D[j,i] = Num.coeffs[knum[j]][j,i]*Phri[l,i]
+        D[j,i] = Num.coeffs[knum[j]][j,i]*Phri[j,i]
       end
 
       start_j += kden[j]

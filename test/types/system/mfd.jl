@@ -9,10 +9,13 @@ M = lfd(N,D)
 @test !isrfd(M)
 
 # Defining right MFDs
-
+N = PolyMatrix([s -s])
+D = PolyMatrix([0 -(s^3+4*s^2+5*s+2); (s+2)^2 s+2])
+M = rfd(N,D)
+@test !islfd(M)
+@test isrfd(M)
 
 # Defining lfd2rfd and rfd2lfd
-
 s = variable("s")
 Nₗ = PolyMatrix([s^2 zero(s); -4s s])
 Dₗ = PolyMatrix([s^3+2s^2-1 s+1; -5s^2-13s-8 (s+1)*(s+4)])
@@ -29,9 +32,15 @@ lmfd = lfd(Nₗ, Dₗ)
 A = [-4 -4 0 -1 -2; 1 0 0 0 0; 0 0 -4 -5 -2; 0 0 1 0 0; 0 0 0 1 0]'
 B = [1 0 0 0 0; -1 0 1 0 0]'
 C = [0 1; 0 0; -1 0; 0 0; 0 0]'
-D = zeros(2,2)
+D = zeros(Int,2,2)
 sys = ss(A,B,C,D)
-m = rfd(sys)
-m.N
-m.D
+mr = rfd(sys)
+mr.N
+mr.D
 cond([B A*B A^2*B A^3*B A^4*B])
+
+ml = lfd(sys)
+ml.N
+ml.D
+
+@test isapprox(mr,ml; rtol=10)
