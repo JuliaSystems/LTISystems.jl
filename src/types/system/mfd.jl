@@ -210,20 +210,20 @@ convert{S,T,L}(::Type{RationalTF{Val{S},Val{T},Val{:rfd}}},
 # Multiplicative and additive identities (meaningful only for SISO)
 one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}})  =
   lfd(one(Int8))
-one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}})  =
+one{M1,M2}(::Type{MFD{Val{:siso},Val{:disc},Val{:lfd},M1,M2}})  =
   lfd(one(Int8), zero(Float64))
 zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}}) =
   lfd(zero(Int8))
-zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}}) =
-  tf(zero(Int8), zero(Float64))
+zero{M1,M2}(::Type{MFD{Val{:siso},Val{:disc},Val{:lfd},M1,M2}}) =
+  lfd(zero(Int8), zero(Float64))
 
 one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}})  =
   rfd(one(Int8))
-one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}})  =
+one{M1,M2}(::Type{MFD{Val{:siso},Val{:disc},Val{:rfd},M1,M2}})  =
   rfd(one(Int8), zero(Float64))
 zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}}) =
   rfd(zero(Int8))
-zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}}) =
+zero{M1,M2}(::Type{MFD{Val{:siso},Val{:disc},Val{:rfd},M1,M2}}) =
   tf(zero(Int8), zero(Float64))
 
 one{T,S,L,M1,M2}(s::MFD{Val{T},Val{S},Val{L},M1,M2})   =
@@ -292,7 +292,7 @@ end
 -{T}(s::MFD{Val{T},Val{:disc},Val{:rfd}}) = rfd(-s.N, copy(s.D), s.Ts)
 
 # Addition (parallel)
-function _mfdparallel{T1,T2,S,L}(s1::MFD{Val{T1},Val{S},Val{L}},
+function _mfdparallelcheck{T1,T2,S,L}(s1::MFD{Val{T1},Val{S},Val{L}},
   s2::MFD{Val{T2},Val{S},Val{L}})
   if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts ≠ zero(s2.Ts)
     warn("parallel(s1,s2): Sampling time mismatch")
@@ -303,21 +303,48 @@ function _mfdparallel{T1,T2,S,L}(s1::MFD{Val{T1},Val{S},Val{L}},
     warn("parallel(s1,s2): size(s1,1) ≠ size(s2,1)")
     throw(DomainError())
   end
+end
 
-  N = vcat(s1.N, s2.N)
-  D = hcat(vcat(s1.D, zeros(s1.D)), vcat(s2.D, zeros(s2.D)))
+function _mfdparallel{S,L}(s₁::MFD{Val{:siso},Val{S},Val{:L}},
+  s₂::MFD{Val{:siso},Val{S},Val{L}})
+  R   = gcrd(s₁.D, s₂.D)
+  D₁  = div(s₁.D, R)
+  D   = D₁*s₂.D        # only include common part R once
+  D₂  = div(s₂.D, R)
+  N   = s₁.N*D₂ + s₂.N*D₁
+  N, D, max(s1.Ts, s2.Ts)
+end
 
-  return N, D, max(s1.Ts, s2.Ts)
+function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
+  s₂::MFD{Val{:mimo},Val{S},Val{lfd}})
+  R, V₁, V₂ = gcrd(s₁.D, s₂.D)
+  detV₁, adjV₁ = inv(V₁)
+  detV₂, adjV₂ = inv(V₂)
+  N₁ = adjV₁*s₁.N/detV₁(0)
+  N₂ = adjV₂*s₂.N/detV₂(0)
+  N₁+N₂, R, max(s1.Ts, s2.Ts)
+end
+
+function _mfdparallel{S}(s₁::MFD{:mimo},Val{S},Val{:lfd}},
+  s₂::MFD{Val{:mimo},Val{S},Val{lfd}})
+  R, V₁, V₂ = gcrd(s₁, s₂)
+  detV₁, adjV₁ = inv(V₁)
+  detV₂, adjV₂ = inv(V₂)
+  N₁ = adjV₁*s₁.N/detV₁(0)
+  N₂ = adjV₂*s₂.N/detV₂(0)
+  N₁+N₂, R, max(s1.Ts, s2.Ts)
 end
 
 function +{T1,T2,L}(s1::MFD{Val{T1},Val{:cont},Val{L}},
   s2::MFD{Val{T2},Val{:cont},Val{L}})
+  _mfdparallelcheck(s1, s2)
   N, D, _ = _mfdparallel(s1, s2)
   MFD(N, D, Val{L})
 end
 
 function +{T1,T2,L}(s1::MFD{Val{T1},Val{:disc},Val{L}},
   s2::MFD{Val{T2},Val{:disc},Val{L}})
+  _mfdparallelcheck(s1, s2)
   N, D, Ts = _mfdparallel(s1, s2)
   MFD(N, D, Ts, Val{L})
 end
@@ -367,20 +394,16 @@ function _mfdseries{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
     throw(DomainError())
   end
 
-  if s1.nu ≠ s2.ny
-    warn("series(s1,s2): s1.nu ≠ s2.ny")
+  if size(s1,2) ≠ size(s2,1)
+    warn("parallel(s1,s2): size(s1,2) ≠ size(s2,1)")
     throw(DomainError())
   end
+end
 
-  T = promote_type(eltype(s1.A), eltype(s1.B), eltype(s2.A), eltype(s2.C))
+function _mfdseries{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
+  s2::MFD{Val{T2},Val{S}})
 
-  a = vcat(hcat(s1.A, s1.B*s2.C),
-        hcat(zeros(T, s2.nx, s1.nx), s2.A))
-  b = vcat(s1.B*s2.D, s2.B)
-  c = hcat(s1.C, s1.D*s2.C)
-  d = s1.D * s2.D
-
-  return a, b, c, d, max(s1.Ts, s2.Ts)
+  return N, D, max(s1.Ts, s2.Ts)
 end
 
 function *(s1::MFD{Val{:siso},Val{:cont}},
