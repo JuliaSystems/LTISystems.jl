@@ -152,6 +152,31 @@ ndims(s::MFD{Val{:mimo}})       = 2
 size(s::MFD)                    = size(s.N)
 size(s::MFD, d)                 = size(s.N, d)
 
+# conversion between 1×1 mimo and siso
+function siso{L}(s::MFD{Val{:mimo},Val{:cont},Val{L}})
+  if size(s) != (1,1)
+    warn("siso(s): system is not 1×1")
+    throw(DomainError())
+  end
+  MFD(s.N[1], s.D[1], Val{L})
+end
+
+function siso{L}(s::MFD{Val{:mimo},Val{:disc},Val{L}})
+  if size(s) != (1,1)
+    warn("siso(s): system is not 1×1")
+    throw(DomainError())
+  end
+  MFD(s.N[1], s.D[1], s.Ts, Val{L})
+end
+
+function mimo(s::LtiSystem{Val{:siso},Val{:cont},Val{L}})
+  MFD(PolyMatrix(s.N, (1,1), Val{:s}) , PolyMatrix(s.D, (1,1), Val{:s}), Val{L})
+end
+
+function mimo(s::LtiSystem{Val{:siso},Val{:disc},Val{L}})
+  MFD(PolyMatrix(s.N, (1,1), Val{:z}) , PolyMatrix(s.D, (1,1), Val{:z}), s.Ts, Val{L})
+end
+
 ## Iteration interface
 start(s::MFD{Val{:mimo}})       = start(s.N)
 next(s::MFD{Val{:mimo}}, state) = (s[state], state+1)
@@ -305,9 +330,10 @@ function _mfdparallelcheck{T1,T2,S,L}(s1::MFD{Val{T1},Val{S},Val{L}},
   end
 end
 
+# siso version
 function _mfdparallel{S,L}(s₁::MFD{Val{:siso},Val{S},Val{:L}},
   s₂::MFD{Val{:siso},Val{S},Val{L}})
-  R   = gcrd(s₁.D, s₂.D)
+  R   = gcd(s₁.D, s₂.D)
   D₁  = div(s₁.D, R)
   D   = D₁*s₂.D        # only include common part R once
   D₂  = div(s₂.D, R)
@@ -315,6 +341,7 @@ function _mfdparallel{S,L}(s₁::MFD{Val{:siso},Val{S},Val{:L}},
   N, D, max(s1.Ts, s2.Ts)
 end
 
+# mimo lfd version
 function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
   s₂::MFD{Val{:mimo},Val{S},Val{lfd}})
   R, V₁, V₂ = gcrd(s₁.D, s₂.D)
@@ -325,40 +352,41 @@ function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
   N₁+N₂, R, max(s1.Ts, s2.Ts)
 end
 
-function _mfdparallel{S}(s₁::MFD{:mimo},Val{S},Val{:lfd}},
-  s₂::MFD{Val{:mimo},Val{S},Val{lfd}})
-  R, V₁, V₂ = gcrd(s₁, s₂)
+# mimo rfd version
+function _mfdparallel{S}(s₁::MFD{{:mimo},Val{S},Val{:rfd}},
+  s₂::MFD{Val{:mimo},Val{S},Val{:rfd}})
+  L, V₁, V₂ = gcld(s₁, s₂)
   detV₁, adjV₁ = inv(V₁)
   detV₂, adjV₂ = inv(V₂)
-  N₁ = adjV₁*s₁.N/detV₁(0)
-  N₂ = adjV₂*s₂.N/detV₂(0)
-  N₁+N₂, R, max(s1.Ts, s2.Ts)
+  N₁ = s₁.N*adjV₁/detV₁(0)
+  N₂ = s₂.N*adjV₂/detV₂(0)
+  N₁+N₂, L, max(s1.Ts, s2.Ts)
 end
 
-function +{T1,T2,L}(s1::MFD{Val{T1},Val{:cont},Val{L}},
-  s2::MFD{Val{T2},Val{:cont},Val{L}})
-  _mfdparallelcheck(s1, s2)
-  N, D, _ = _mfdparallel(s1, s2)
-  MFD(N, D, Val{L})
+# mimo mixed lfd/rfd version
+function _mfdparallel{S,L1,L2}(s₁::MFD{{:mimo},Val{S},Val{L1}},
+  s₂::MFD{Val{:mimo},Val{S},Val{L2}})
+  _mfdparallel(lfd(s₁), lfd(s₂))
 end
 
-function +{T1,T2,L}(s1::MFD{Val{T1},Val{:disc},Val{L}},
-  s2::MFD{Val{T2},Val{:disc},Val{L}})
-  _mfdparallelcheck(s1, s2)
-  N, D, Ts = _mfdparallel(s1, s2)
-  MFD(N, D, Ts, Val{L})
+# siso and mimo of dimensions 1×1
+function _mfdparallel{T1,T2,S,L1,L2}(s₁::MFD{Val{T1},Val{S},Val{L1}},
+  s₂::MFD{Val{T2},Val{S},Val{L2}})
+  _mfdparallel(mimo(s₁), mimo(s₂))
 end
 
 function +{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:cont},Val{L1}},
   s2::MFD{Val{T2},Val{:cont},Val{L2}})
-  N, D, _ = _mfdparallel(lfd(s1), lfd(s2))
-  lfd(N, D, Val{L})
+  _mfdparallelcheck(s1, s2)
+  N, D, _ = _mfdparallel(s1, s2)
+  MFD(N, D, Val{L1})
 end
 
 function +{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:disc},Val{L1}},
   s2::MFD{Val{T2},Val{:disc},Val{L2}})
-  N, D, Ts = _mfdparallel(lfd(s1), lfd(s2))
-  lfd(N, D, Ts, Val{L})
+  _mfdparallelcheck(s1, s2)
+  N, D, Ts = _mfdparallel(s1, s2)
+  MFD(N, D, Ts, Val{L1})
 end
 
 .+(s1::MFD{Val{:siso}}, s2::MFD{Val{:siso}}) = +(s1, s2)
@@ -385,7 +413,7 @@ end
 .-(g::Real, s::MFD{Val{:siso}})    = -(g, s)
 
 # Multiplication
-function _mfdseries{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
+function _mfdseriescheck{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
   s2::MFD{Val{T2},Val{S}})
   # Remark: s1*s2 implies u -> s2 -> s1 -> y
 
@@ -395,39 +423,90 @@ function _mfdseries{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
   end
 
   if size(s1,2) ≠ size(s2,1)
-    warn("parallel(s1,s2): size(s1,2) ≠ size(s2,1)")
+    warn("series(s1,s2): size(s1,2) ≠ size(s2,1)")
     throw(DomainError())
   end
 end
 
-function _mfdseries{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
-  s2::MFD{Val{T2},Val{S}})
-
-  return N, D, max(s1.Ts, s2.Ts)
+# siso version
+function _mfdseries{S,L1}(s₁::MFD{Val{:siso},Val{S},Val{L1}},
+  s₂::MFD{Val{:siso},Val{S},Val{L2}})
+  R₁  = gcd(s₁.D, s₂.N)
+  R₂  = gcd(s₂.D, s₁.N)
+  D   = div(s₁.D, R₁)*div(s₂.D, R₂)
+  N   = div(s₂.N, R₁)*div(s₁.N, R₂)
+  N, D, max(s1.Ts, s2.Ts)
 end
 
-function *(s1::MFD{Val{:siso},Val{:cont}},
-  s2::MFD{Val{:siso},Val{:cont}})
-  a, b, c, d, _ = _ssseries(s1, s2)
-  MFD(a, b, c, d[1])
+# mimo lfd version
+function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
+  s₂::MFD{Val{:mimo},Val{S},Val{lfd}})
+  # D₁^-1 N₁ D₂^-1 N₂
+  sᵢ  = lfd(rfd(s₁.N, s₂.D))
+  # D₁^-1 Dᵢ^-1 Nᵢ N₂
+  D   = Dᵢ*s₁.D
+  N   = Nᵢ*N₂
+  # ensure coprimeness
+  L, V₁, V₂ = gcld(N,D)
+  V₁, V₂, max(s1.Ts, s2.Ts)
 end
 
-function *(s1::MFD{Val{:siso},Val{:disc}},
-  s2::MFD{Val{:siso},Val{:disc}})
-  a, b, c, d, Ts = _ssseries(s1, s2)
-  MFD(a, b, c, d[1], Ts)
+# mimo rfd version
+function _mfdseries{S}(s₁::MFD{{:mimo},Val{S},Val{:rfd}},
+  s₂::MFD{Val{:mimo},Val{S},Val{:rfd}})
+  # N₁ D₁^-1 N₂ D₂^-1
+  sᵢ  = rfd(lfd(s₂.N, s₁.D))
+  # N₁ Nᵢ Dᵢ^-1 D₂^-1
+  D   = s₂.D*Dᵢ
+  N   = N₁*Nᵢ
+  # ensure coprimeness
+  R, V₁, V₂ = gcrd(N,D)
+  V₁, V₂, max(s1.Ts, s2.Ts)
 end
 
-function *{T1,T2}(s1::MFD{Val{T1},Val{:cont}},
-  s2::MFD{Val{T2},Val{:cont}})
-  a, b, c, d, _ = _ssseries(s1, s2)
-  MFD(a, b, c, d)
+# mimo mixed lfd/rfd versions
+function _mfdseries{S}(s₁::MFD{{:mimo},Val{S},Val{:lfd}},
+  s₂::MFD{Val{:mimo},Val{S},Val{:rfd}})
+  # N₁ D₁^-1 D₂^-1 N₂
+  Dᵢ  = s₂.D*s₁.D
+  sᵢ  = lfd(rfd(s₂.N, Dᵢ))
+  #  Dᵢ^-1 Nᵢ N₂
+  N   = sᵢ.N*N₂
+  # ensure coprimeness
+  L, V₁, V₂ = gcld(N, sᵢ.D)
+  V₁, V₂, max(s1.Ts, s2.Ts)
 end
 
-function *{T1,T2}(s1::MFD{Val{T1},Val{:disc}},
-  s2::MFD{Val{T2},Val{:disc}})
-  a, b, c, d, Ts = _ssseries(s1, s2)
-  MFD(a, b, c, d, Ts)
+function _mfdseries{S}(s₁::MFD{{:mimo},Val{S},Val{:rfd}},
+  s₂::MFD{Val{:mimo},Val{S},Val{:lfd}})
+  # D₁^-1 N₁ N₂ D₂^-1
+  Nᵢ  = s₁.N*s₂.N
+  sᵢ  = rfd(lfd(Nᵢ, s₁.D))
+  #  Nᵢ Dᵢ^-1
+  D   = D₂*sᵢ.D
+  # ensure coprimeness
+  R, V₁, V₂ = gcrd(sᵢ.N, D)
+  V₁, V₂, max(s1.Ts, s2.Ts)
+end
+
+# siso and mimo of dimensions 1×1
+function _mfdseries{T1,T2,S,L1,L2}(s₁::MFD{Val{T1},Val{S},Val{L1}},
+  s₂::MFD{Val{T2},Val{S},Val{L2}})
+  _mfdseries(mimo(s₁), mimo(s₂))
+end
+
+function *{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:cont},Val{L1}},
+  s2::MFD{Val{T2},Val{:cont},Val{L2}})
+  _mfdseriescheck(s1, s2)
+  N, D, _ = _mfdseries(s1, s2)
+  MFD(N, D, Val{L1})
+end
+
+function *{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:disc},Val{L1}},
+  s2::MFD{Val{T2},Val{:disc},Val{L2}})
+  _mfdseriescheck(s1, s2)
+  N, D, Ts = _mfdseries(s1, s2)
+  MFD(N, D, Ts, Val{L1})
 end
 
 .*(s1::MFD{Val{:siso}}, s2::MFD{Val{:siso}}) = *(s1, s2)

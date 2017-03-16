@@ -44,6 +44,8 @@ export
   # Interfaces
   issiso,
   ismimo,
+  siso,
+  mimo,  
   iscontinuous,
   isdiscrete,
   samplingtime,
