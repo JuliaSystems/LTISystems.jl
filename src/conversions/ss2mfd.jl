@@ -10,7 +10,7 @@ function _ss2rfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
   Nₗ    = PolyMatrix(sys.B, (n,nu), Val{_pmvaltype(sys)})
 
   # Write (sI-A)^{-1} B as a left MFD and convert to right MFD
-  L, U = ltriang(PolyMatrix(hcat(-Dₗ,Nₗ)))
+  L, U = ltriang(hcat(-Dₗ,Nₗ))
 
   # NOTE: Missing to check if P2[ny,:] is non-zero (this is equivalent to controllability)
   if norm(L[ny,:]) < 1e-12
@@ -21,7 +21,7 @@ function _ss2rfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
   Dr = U[n+1:end,n+1:end]
 
   # Include C and D in the final right MFD
-  return PolyMatrix(sys.D*Dr - sys.C*Nr), PolyMatrix(Dr)
+  return sys.D*Dr - sys.C*Nr, Dr
 end
 
 rfd(sys::StateSpace{Val{:siso},Val{:cont}})  =
@@ -42,7 +42,7 @@ function _ss2lfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
   Dᵣ    = PolyMatrix(vcat(-sys.A, eye(sys.A)), (n,n), Val{_pmvaltype(sys)})
   Nᵣ    = PolyMatrix(sys.C, (ny,n), Val{_pmvaltype(sys)})
   # Write C(sI-A)^{-1} as a right MFD and convert to left MFD
-  R,U   = rtriang(PolyMatrix(vcat(-Dᵣ, Nᵣ)))
+  R,U   = rtriang(vcat(-Dᵣ, Nᵣ))
 
   # NOTE: Missing to check if R[ny,:] is non-zero (this is equivalent to controllability)
   if norm(R[:,nu]) < 1e-12
@@ -52,7 +52,7 @@ function _ss2lfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
   Dₗ = U[n+1:end,n+1:end]
 
   # Include B and D in the final right MFD
-  return PolyMatrix(Dₗ*sys.D - Nₗ*sys.B), PolyMatrix(Dₗ)
+  return Dₗ*sys.D - Nₗ*sys.B, Dₗ
 end
 
 lfd(sys::StateSpace{Val{:siso},Val{:cont}})  =

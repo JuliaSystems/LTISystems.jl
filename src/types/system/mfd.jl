@@ -151,6 +151,7 @@ ndims(s::MFD{Val{:siso}})       = 1
 ndims(s::MFD{Val{:mimo}})       = 2
 size(s::MFD)                    = size(s.N)
 size(s::MFD, d)                 = size(s.N, d)
+length(s::MFD{Val{:mimo}})      = length(s.N)
 
 # conversion between 1×1 mimo and siso
 function siso{L}(s::MFD{Val{:mimo},Val{:cont},Val{L}})
@@ -169,11 +170,11 @@ function siso{L}(s::MFD{Val{:mimo},Val{:disc},Val{L}})
   MFD(s.N[1], s.D[1], s.Ts, Val{L})
 end
 
-function mimo(s::LtiSystem{Val{:siso},Val{:cont},Val{L}})
+function mimo{L}(s::MFD{Val{:siso},Val{:cont},Val{L}})
   MFD(PolyMatrix(s.N, (1,1), Val{:s}) , PolyMatrix(s.D, (1,1), Val{:s}), Val{L})
 end
 
-function mimo(s::LtiSystem{Val{:siso},Val{:disc},Val{L}})
+function mimo{L}(s::MFD{Val{:siso},Val{:disc},Val{L}})
   MFD(PolyMatrix(s.N, (1,1), Val{:z}) , PolyMatrix(s.D, (1,1), Val{:z}), s.Ts, Val{L})
 end
 
@@ -184,10 +185,6 @@ done(s::MFD{Val{:mimo}}, state) = done(s.N, state)
 
 eltype{S,M1}(::Type{MFD{Val{:mimo},Val{S},M1}}) =
   MFD{Val{:siso},Val{S},M1}
-
-length(s::MFD{Val{:mimo}})      = length(s.N)
-size(s::MFD)                    = size(s.N)
-size(s::MFD, d)                 = size(s.N, d)
 
 # Indexing of MIMO systems
 function getindex(s::MFD{Val{:mimo},Val{:cont},Val{:lfd}}, I...)
@@ -271,8 +268,8 @@ rfd{T,S}(s::MFD{T,S,Val{:rfd}})              = s
 
 function _lfd2rfd{T,S}(s::MFD{T,S,Val{:lfd}})
   n,m = size(s)
-  p = PolyMatrix(hcat(-s.N, s.D))
-  L,U = ltriang(p)
+  p   = hcat(-s.N, s.D)
+  _,U = ltriang(p)
 
   D = U[1:m,n+1:n+m]
   N = U[m+1:n+m,n+1:n+m]
@@ -281,7 +278,7 @@ end
 
 function _rfd2lfd{T,S}(s::MFD{T,S,Val{:rfd}})
   n,m = size(s)
-  p = PolyMatrix(vcat(-s.D, s.N))
+  p   = vcat(-s.D, s.N)
   _,U = rtriang(p)
 
   N = U[m+1:n+m,1:m]
@@ -343,7 +340,7 @@ end
 
 # mimo lfd version
 function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
-  s₂::MFD{Val{:mimo},Val{S},Val{lfd}})
+  s₂::MFD{Val{:mimo},Val{S},Val{:lfd}})
   R, V₁, V₂ = gcrd(s₁.D, s₂.D)
   detV₁, adjV₁ = inv(V₁)
   detV₂, adjV₂ = inv(V₂)
@@ -353,18 +350,18 @@ function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
 end
 
 # mimo rfd version
-function _mfdparallel{S}(s₁::MFD{{:mimo},Val{S},Val{:rfd}},
+function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:rfd}},
   s₂::MFD{Val{:mimo},Val{S},Val{:rfd}})
-  L, V₁, V₂ = gcld(s₁, s₂)
+  L, V₁, V₂ = gcld(s₁.D, s₂.D)
   detV₁, adjV₁ = inv(V₁)
   detV₂, adjV₂ = inv(V₂)
   N₁ = s₁.N*adjV₁/detV₁(0)
   N₂ = s₂.N*adjV₂/detV₂(0)
-  N₁+N₂, L, max(s1.Ts, s2.Ts)
+  N₁+N₂, L, max(s₁.Ts, s₂.Ts)
 end
 
 # mimo mixed lfd/rfd version
-function _mfdparallel{S,L1,L2}(s₁::MFD{{:mimo},Val{S},Val{L1}},
+function _mfdparallel{S,L1,L2}(s₁::MFD{Val{:mimo},Val{S},Val{L1}},
   s₂::MFD{Val{:mimo},Val{S},Val{L2}})
   _mfdparallel(lfd(s₁), lfd(s₂))
 end
@@ -429,7 +426,7 @@ function _mfdseriescheck{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
 end
 
 # siso version
-function _mfdseries{S,L1}(s₁::MFD{Val{:siso},Val{S},Val{L1}},
+function _mfdseries{S,L1,L2}(s₁::MFD{Val{:siso},Val{S},Val{L1}},
   s₂::MFD{Val{:siso},Val{S},Val{L2}})
   R₁  = gcd(s₁.D, s₂.N)
   R₂  = gcd(s₂.D, s₁.N)
@@ -452,7 +449,7 @@ function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
 end
 
 # mimo rfd version
-function _mfdseries{S}(s₁::MFD{{:mimo},Val{S},Val{:rfd}},
+function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:rfd}},
   s₂::MFD{Val{:mimo},Val{S},Val{:rfd}})
   # N₁ D₁^-1 N₂ D₂^-1
   sᵢ  = rfd(lfd(s₂.N, s₁.D))
@@ -465,7 +462,7 @@ function _mfdseries{S}(s₁::MFD{{:mimo},Val{S},Val{:rfd}},
 end
 
 # mimo mixed lfd/rfd versions
-function _mfdseries{S}(s₁::MFD{{:mimo},Val{S},Val{:lfd}},
+function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
   s₂::MFD{Val{:mimo},Val{S},Val{:rfd}})
   # N₁ D₁^-1 D₂^-1 N₂
   Dᵢ  = s₂.D*s₁.D
@@ -477,7 +474,7 @@ function _mfdseries{S}(s₁::MFD{{:mimo},Val{S},Val{:lfd}},
   V₁, V₂, max(s1.Ts, s2.Ts)
 end
 
-function _mfdseries{S}(s₁::MFD{{:mimo},Val{S},Val{:rfd}},
+function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:rfd}},
   s₂::MFD{Val{:mimo},Val{S},Val{:lfd}})
   # D₁^-1 N₁ N₂ D₂^-1
   Nᵢ  = s₁.N*s₂.N
@@ -528,7 +525,7 @@ hash(s::MFD, h::UInt)     = hash(s.D, hash(S.N, hash(S.Ts, h)))
 isequal(s1::MFD, s2::MFD) = (hash(s1) == hash(s2))
 
 function isapprox{T,S,L1,L2,M1,M2,M3,M4}(s1::MFD{T,S,L1,M1,M2}, s2::MFD{T,S,L2,M3,M4};
-  rtol::Real=Base.rtoldefault(promote_type(eltype(eltype(s1.N)),eltype(eltype(s1.D)),eltype(eltype(s2.N)),eltype(eltype(s2.D)))),
+  rtol::Real=Base.rtoldefault(promote_type(eltype(mattype(s1.N)),eltype(mattype(s1.D)),eltype(mattype(s2.N)),eltype(mattype(s2.D)))),
   atol::Real=0, norm::Function=vecnorm)
   isapprox(s1.Ts, s2.Ts) || return false # quick exit
   lfd1 = lfd(s1)
