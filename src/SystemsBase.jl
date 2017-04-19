@@ -30,7 +30,7 @@ import Base: convert, promote_rule
 # Import identities for overloading
 import Base: one, zero
 
-# Import num and den for overloading
+# Import num, den for getting numerator and denominator polynomials
 import Base: num, den
 
 # Import inv and zeros
