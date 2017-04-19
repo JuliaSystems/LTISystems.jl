@@ -1,7 +1,9 @@
-using SystemsBase
-using RationalFunctions
 using Polynomials
+using RationalFunctions
 using PolynomialMatrices
+
+using SystemsBase
+
 using Base.Test
 using Base.Test.@testset
 
@@ -13,6 +15,6 @@ include("methods/simulation.jl")
 
 # types
 include("types/system/ltisystem.jl")
-include("types/system/rationaltf.jl")
+include("types/system/transferfunction.jl")
 include("types/system/statespace.jl")
 include("types/system/mfd.jl")

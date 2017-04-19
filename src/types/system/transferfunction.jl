@@ -333,6 +333,12 @@ one(s::TransferFunction{Val{:siso},Val{:disc}})   = one(typeof(s))
 zero(s::TransferFunction{Val{:siso},Val{:cont}})  = zero(typeof(s))
 zero(s::TransferFunction{Val{:siso},Val{:disc}})  = zero(typeof(s))
 
+# Simple analysis
+num(s::TransferFunction{Val{:siso}}) = num(s.mat[1])
+num(s::TransferFunction{Val{:mimo}}) = map(x->num(x), s.mat)
+den(s::TransferFunction{Val{:siso}}) = den(s.mat[1])
+den(s::TransferFunction{Val{:mimo}}) = map(x->den(x), s.mat)
+
 # Inverse of a transfer-function model
 function _tfinv(s::TransferFunction)
   if s.ny ≠ s.nu
