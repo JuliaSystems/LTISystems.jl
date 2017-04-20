@@ -83,20 +83,20 @@ function minreal{M1<:AbstractMatrix,M2<:AbstractMatrix,M3<:AbstractMatrix,
   return Am, Bm, Cm, D
 end
 
-function minreal(s::StateSpace{Siso{true},Continuous{true}},
+function minreal(s::StateSpace{Val{:siso},Val{:cont}},
   tol::Float64 = zero(Float64))
   Am, Bm, Cm, Dm = minreal(s.A, s.B, s.C, s.D, tol)
   ss(Am, Bm, Cm, Dm[1])
 end
 
-function minreal(s::StateSpace{Siso{true},Continuous{false}},
+function minreal(s::StateSpace{Val{:siso},Val{:disc}},
   tol::Float64 = zero(Float64))
   Am, Bm, Cm, Dm = minreal(s.A, s.B, s.C, s.D, tol)
   ss(Am, Bm, Cm, Dm[1], s.Ts)
 end
 
-minreal(s::StateSpace{Siso{false},Continuous{true}},
+minreal(s::StateSpace{Val{:mimo},Val{:cont}},
   tol::Float64 = zero(Float64)) = ss(minreal(s.A, s.B, s.C, s.D, tol)...)
 
-minreal(s::StateSpace{Siso{false},Continuous{false}},
+minreal(s::StateSpace{Val{:mimo},Val{:disc}},
   tol::Float64 = zero(Float64)) = ss(minreal(s.A, s.B, s.C, s.D, tol)..., s.Ts)

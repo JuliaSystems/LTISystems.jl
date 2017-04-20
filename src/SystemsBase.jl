@@ -68,8 +68,7 @@ export
   feedback,
   rosenbrock,
   minreal,
-  freqresp,
-  evalfr
+  freqresp
 
 # System types
 include("types/system/ltisystem.jl")
@@ -89,12 +88,12 @@ include("types/system/statespace.jl")
 # Methods
 # include("methods/bode.jl")
 # include("methods/feedback.jl")
-# include("methods/freqresp.jl")
-# include("methods/minreal.jl")
+include("methods/freqresp.jl")
+include("methods/minreal.jl")
 # include("methods/nyquist.jl")
 # include("methods/parallel.jl")
 # include("methods/reduce.jl")
-# include("methods/rosenbrock.jl")
+include("methods/rosenbrock.jl")
 # include("methods/series.jl")
 
 end # module
