@@ -10,132 +10,76 @@ of system `sys` over the frequency value or vector `ω`.
 `freqresp` returns `ω` together with the frequency response `fr` only if `ω` is
 a vector. Otherwise, only `fr` is returned.
 """
-freqresp{S,M<:Real}(sys::LtiSystem{S,Continuous{true}}, ω::AbstractVector{M}) = (_evalfr(sys,im*ω), ω)
-freqresp{S,M<:Real}(sys::LtiSystem{S,Continuous{false}}, ω::AbstractVector{M}) = (_evalfr(sys,exp(ω*im*sys.Ts)), ω)
-freqresp{S}(sys::LtiSystem{S,Continuous{true}}, ω::Real) = _evalfr(sys,im*ω)
-freqresp{S}(sys::LtiSystem{S,Continuous{false}}, ω::Real) = _evalfr(sys,exp(ω*im*sys.Ts))
+freqresp{S}(sys::LtiSystem{Val{S},Val{:cont}}, x::Real)                     =
+  sys(1im*x)
+freqresp{S,M<:Real}(sys::LtiSystem{Val{S},Val{:cont}}, X::AbstractArray{M}) =
+  sys(1im*X)
+freqresp{S}(sys::LtiSystem{Val{S},Val{:disc}}, x::Real)                     =
+  sys(exp(1im*samplingtime(sys)*x))
+freqresp{S,M<:Real}(sys::LtiSystem{Val{S},Val{:disc}}, X::AbstractArray{M}) =
+  sys(exp(1im*samplingtime(sys)*X))
 
-"""
-Evaluate the frequency response
-
-`H(s) = C*((sI - A)^-1)*B + D`
-
-of system `sys` at the complex value or vector `s`.
-"""
-evalfr(sys::LtiSystem{Siso{true}}, s::Number) = _evalfr(sys,s)[1]
-evalfr(sys::LtiSystem{Siso{false}}, s::Number) = _evalfr(sys,s)
-evalfr{M<:Number}(sys::LtiSystem{Siso{true}}, s::AbstractVector{M}) = _evalfr(sys,s)[1,1,:]
-evalfr{M<:Number}(sys::LtiSystem{Siso{false}}, s::AbstractVector{M}) = _evalfr(sys,s)
-evalfr(mat::AbstractMatrix, s::Number) = map(sys -> evalfr(sys, s), mat)
+# Evaluate system models at given complex numbers
+@compat (sys::RationalTF{Val{:siso}})(x::Number)                      =
+  (f = sys.mat[1]; convert(Complex128, f(x)))
+@compat (sys::RationalTF{Val{:siso}}){M<:Number}(X::AbstractArray{M}) =
+  (f = sys.mat[1]; Complex128[f(x) for x in X])
+@compat (sys::RationalTF{Val{:mimo}})(x::Number)                      =
+  Complex128[f(x) for f in sys.mat]
+@compat (sys::RationalTF{Val{:mimo}}){M<:Number}(X::AbstractArray{M}) =
+  Complex128[f(x) for f in sys.mat, x in X]
 
 # Implements algorithm found in:
 # Laub, A.J., "Efficient Multivariable Frequency Response Computations",
 # IEEE Transactions on Automatic Control, AC-26 (1981), pp. 407-408.
-function _evalfr{M<:Number}(sys::StateSpace, s::AbstractVector{M})
-  ny, nu = size(sys)
-  nw = length(s)
+function _eval(sys::StateSpace, x::Number)
+  R = x*I - sys.A
+  convert(AbstractMatrix{Complex128}, sys.D + sys.C*(R\sys.B))
+end
 
+function _eval{M<:Number}(sys::StateSpace, X::AbstractArray{M})
   # Transform system into Hessenberg form
-  A, B, C, D = sys.A, sys.B, sys.C, sys.D
-  F  = hessfact(A)
-  Ah = F[:H]
-  T  = full(F[:Q])
-  Bh = convert(AbstractMatrix{Complex128},T*B)
-  Ch = convert(AbstractMatrix{Complex128},C/T)
-  D  = convert(AbstractMatrix{Complex128},D)
+  resp = Array(Complex128, size(sys)..., size(X)...)
 
-  resp = Array(Complex128, ny, nu, nw)
-  for i = 1:nw
-    R = s[i]*speye(sys.nx) - Ah
-    ipiv, info = luhessfact!(R)
+  sysr        = minreal(sys)
+  A, B, C, D  = sysr.A, sysr.B, sysr.C, sysr.D
+
+  if isempty(A)
+    for idx in CartesianRange(indices(X))
+      resp[:, :, idx] = D + C*((X[idx]*I - A)\B)
+    end
+    return resp
+  end
+
+  F           = hessfact(A)
+  Ah          = F[:H]
+  T           = full(F[:Q])
+  Bh          = T*B
+  Ch          = C/T
+
+  for idx in CartesianRange(indices(X))
+    R           = X[idx]*I - Ah
+    ipiv, info  = luhessfact!(R)
     if info > 0
       # s[i] is a pole of the system
-      resp[:, :, i] = D + Ch*((s[i]*speye(sys.nx) - Ah)\Bh)
+      resp[:, :, idx] = D + Ch*((X[idx]*I - Ah)\Bh)
     else
-      temp = copy(Bh)
-      hesssolve!(R,ipiv,temp)
-      resp[:, :, i] = D + Ch*temp
+      temp = convert(AbstractMatrix{eltype(R)}, Bh)
+      hesssolve!(R, ipiv, temp)
+      resp[:, :, idx] = D + Ch*temp
     end
   end
   resp
 end
 
-function _evalfr{M<:Number}(sys::LtiSystem, s::AbstractVector{M})
-  ny, nu = size(sys)
-  nw = length(s)
-  resp = Array(Complex128, ny, nu, nw)
-  for i = 1:nw
-    resp[:, :, i] = evalfr(sys, s[i])
-  end
-  resp
-end
-
-function _evalfr(sys::StateSpace, s::Number)
-  S = promote_type(typeof(s), Float64)
-  R = s[i]*speye(sys.nx) - sys.A
-  sys.D + sys.C*((R\sys.B)::Matrix{S})
-end
-
-function _evalfr(sys::RationalTF{Siso{true}}, s::Number)
-  S = promote_type(typeof(s), Float64)
-  den = polyval(sys.den[1], s)
-  if den == zero(S)
-    convert(S, Inf)
-  else
-    polyval(sys.num[1], s)/den
-  end
-end
-function _evalfr(sys::RationalTF, s::Number)
-  S = promote_type(typeof(s), Float64)
-  ny, nu = size(sys)
-  res = Array(S, ny, nu)
-  for j = 1:nu
-    for i = 1:ny
-      res[i, j] = evalfr(mat[i, j], s)
-    end
-  end
-  return res
-end
-
-# `F(s)`
-# Notation for frequency response evaluation:
-# F(s) evaluates the LTI system F at the complex value or vector s.
-#
-# It is not possible to define this directly for LtiSystem in Julia 0.5, because it is an abstract type.
-# WARNING: If one defines a new subtype of LtiSystem in a package requiring SystemsBase.jl,
-# these lines should be executed again.
-for T in subtypes(LtiSystem)
-  (sys::T)(s) = evalfr(sys,s)
-end
-
-# (sys::RationalTF)(s) = evalfr(sys,s)
-# (sys::StateSpace)(s) = evalfr(sys,s)
-# (sys::ZeroPoleGain)(s) = evalfr(sys,s)
-# (sys::GeneralMimo)(s) = evalfr(sys,s)
-
-# function evalfr(sys::ZeroPoleGain, s::Number)
-#     S = promote_type(typeof(s), Float64)
-#     ny, nu = size(sys)
-#     res = Array(S, ny, nu)
-#     for i=1:ny, j=1:nu
-#         res[i, j] = evalfr(sys.z[i,j], sys.p[i,j], sys.k[i,j], s)
-#     end
-#     return res
-# end
-# function evalfr(z::Vector{Complex128}, p::Vector{Complex128}, k::Float64, s::Number)
-#     S = promote_type(typeof(s), Float64)
-#     res = k
-#     for zi in z
-#         res *= s - zi
-#     end
-#     for pi in p
-#         fact = s - pi
-#         fact == zero(S) ? (return convert(S, Inf)) : (res /= fact)
-#     end
-#     return res
-# end
-
-
+@compat (sys::StateSpace{Val{:siso}})(x::Number)                      =
+  _eval(sys, x)[1]
+@compat (sys::StateSpace{Val{:siso}}){M<:Number}(X::AbstractArray{M}) =
+  reshape(_eval(sys, X), size(X))
+@compat (sys::StateSpace{Val{:mimo}})(x::Number)                      =
+  _eval(sys, x)
+@compat (sys::StateSpace{Val{:mimo}}){M<:Number}(X::AbstractArray{M}) =
+  _eval(sys, X)
 
 """
 `ipiv, info = luhessfact!(H)`

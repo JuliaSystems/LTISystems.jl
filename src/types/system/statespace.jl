@@ -144,20 +144,20 @@ ss{T<:Real}(D::AbstractMatrix{T})           = StateSpace(zeros(T,0,0),
 ss{T<:Real}(D::AbstractMatrix{T}, Ts::Real) = StateSpace(zeros(T,0,0),
   zeros(T,0,size(D,2)), zeros(T,size(D,1),0), D, Ts)
 
-# Catch-all for convenience when dealing with scalars, vectors, etc.
-function _reshape(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
-  C::Union{Real,VecOrMat})
-  a = isa(A, Real) ? fill(A,1,1) : reshape(A, size(A,1,2)...)
-  b = isa(B, Real) ? fill(B,1,1) : reshape(B, size(B,1,2)...)
-  c = isa(C, Real) ? fill(C,1,1) : reshape(C, size(C,1,2)...)
-  return a, b, c
-end
-ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
-  C::Union{Real,VecOrMat})              = ss(_reshape(A, B, C)...)
-ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
-  C::Union{Real,VecOrMat}, D)           = ss(_reshape(A, B, C)..., D)
-ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
-  C::Union{Real,VecOrMat}, D, Ts::Real) = ss(_reshape(A, B, C)..., D, Ts)
+# # Catch-all for convenience when dealing with scalars, vectors, etc.
+# function _reshape(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
+#   C::Union{Real,VecOrMat})
+#   a = isa(A, Real) ? fill(A,1,1) : reshape(A, size(A,1,2)...)
+#   b = isa(B, Real) ? fill(B,1,1) : reshape(B, size(B,1,2)...)
+#   c = isa(C, Real) ? fill(C,1,1) : reshape(C, size(C,1,2)...)
+#   return a, b, c
+# end
+# ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
+#   C::Union{Real,VecOrMat})              = ss(_reshape(A, B, C)...)
+# ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
+#   C::Union{Real,VecOrMat}, D)           = ss(_reshape(A, B, C)..., D)
+# ss(A::Union{Real,VecOrMat}, B::Union{Real,VecOrMat},
+#   C::Union{Real,VecOrMat}, D, Ts::Real) = ss(_reshape(A, B, C)..., D, Ts)
 
 # Interfaces
 samplingtime(s::StateSpace) = s.Ts
