@@ -1,4 +1,4 @@
-julia 0.4
+julia 0.5
 RationalFunctions 0.0.4
 PolynomialMatrices 0.1.1
 Compat 0.17.0
