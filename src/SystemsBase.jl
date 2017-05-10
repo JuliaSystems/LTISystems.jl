@@ -45,9 +45,10 @@ export
   issiso,
   ismimo,
   siso,
-  mimo,  
+  mimo,
   iscontinuous,
   isdiscrete,
+  isproper,
   samplingtime,
   numstates,
   numinputs,
@@ -62,8 +63,13 @@ export
   denpoly,
   # Constructors
   mfd,
+  lfd,
+  rfd,
   ss,
   tf,
+  #
+  islfd,
+  isrfd,
   # Methods
   series,
   parallel,

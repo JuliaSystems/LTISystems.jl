@@ -99,6 +99,17 @@ function zeros(s::LtiSystem)
   throw(MethodError(zeros, Tuple{typeof(s)}))
 end
 
+function isproper(s::LtiSystem)
+  warn("isproper(s) not implemented for s::$(typeof(s1))")
+  throw(MethodError(evalfr, Tuple{typeof(s),typeof(ω)}))
+end
+
+# is strictly proper, better function name?
+function isstrictlyproper(s::LtiSystem)
+  warn("issproper(s) not implemented for s::$(typeof(s1))")
+  throw(MethodError(evalfr, Tuple{typeof(s),typeof(ω)}))
+end
+
 function tzeros(s::LtiSystem)
   warn("tzeros(s) not implemented for s::$(typeof(s))")
   throw(MethodError(tzeros, Tuple{typeof(s)}))
@@ -130,7 +141,12 @@ function denpoly(s::LtiSystem)
 end
 
 # Constructors among different types
-function mfd(s::LtiSystem)
+function lfd(s::LtiSystem)
+  warn("mfd(s) not implemented for s::$(typeof(s))")
+  throw(MethodError(mfd, Tuple{typeof(s)}))
+end
+
+function rfd(s::LtiSystem)
   warn("mfd(s) not implemented for s::$(typeof(s))")
   throw(MethodError(mfd, Tuple{typeof(s)}))
 end

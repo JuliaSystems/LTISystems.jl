@@ -35,8 +35,10 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, ::Type{Val{L}})
     ny, nu = mfdcheck(N, D, Val{L})
-    new{Val{:mimo},Val{:cont},Val{L},M1,M2}(PolyMatrix(coeffs(N), size(N), Val{:s}),
-      PolyMatrix(coeffs(D), size(D), Val{:s}), nu, ny, zero(Float64))
+    _N = PolyMatrix(coeffs(N), size(N), Val{:s})
+    _D = PolyMatrix(coeffs(D), size(D), Val{:s})
+    new{Val{:mimo},Val{:cont},Val{L},typeof(_N),typeof(_D)}(_N, _D, nu, ny,
+                                                            zero(Float64))
     # should we do better checks than just converting the variable to the correct one?
   end
 
@@ -44,14 +46,52 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
     ny, nu = mfdcheck(N, D, Val{L}, Ts)
-    new{Val{:mimo},Val{:disc},Val{L},M1,M2}(PolyMatrix(coeffs(N), size(N), Val{:z}),
-      PolyMatrix(coeffs(D), size(D), Val{:z}), nu, ny, convert(Float64, Ts))
+    _N = PolyMatrix(coeffs(N), size(N), Val{:z})
+    _D = PolyMatrix(coeffs(D), size(D), Val{:z})
+    new{Val{:mimo},Val{:disc},Val{L},typeof(_N),typeof(_D)}(_N, _D, nu, ny,
+                                                            convert(Float64, Ts))
     # should we do better checks than just converting the variable to the correct one?
   end
 end
 
 function mfdcheck{T<:Real,S<:Real}(N::Poly{T}, D::Poly{S}, Ts::Real = zero(Float64))
   @assert Ts ≥ zero(Ts) && !isinf(Ts) "MFD: Ts must be non-negative real number"
+end
+
+isproper(s::MFD{Val{:siso}})  = degree(s.D) ≥ degree(s.N)
+
+function isproper{S}(s::MFD{Val{:mimo},Val{S},Val{:rfd}})
+  if is_col_proper(s.D)
+    return all(col_degree(s.D) .>= col_degree(s.N))
+  else
+    isproper(tf(s))
+  end
+end
+
+function isproper{S}(s::MFD{Val{:mimo},Val{S},Val{:lfd}})
+  if is_row_proper(s.D)
+    return all(row_degree(s.D) .>= row_degree(s.N))
+  else
+    isproper(tf(s))
+  end
+end
+
+isstrictlyproper(s::MFD{Val{:siso}}) = degree(s.D) > degree(s.N)
+
+function isstrictlyproper{S}(s::MFD{Val{:mimo},Val{S},Val{:rfd}})
+  if is_col_proper(s.D)
+    return all(col_degree(s.D) .>= col_degree(s.N))
+  else
+    isproper(tf(s))
+  end
+end
+
+function isstrictlyproper{S}(s::MFD{Val{:mimo},Val{S},Val{:lfd}})
+  if is_row_proper(s.D)
+    return all(row_degree(s.D) .>= row_degree(s.N))
+  else
+    isstrictlyproper(tf(s))
+  end
 end
 
 # Enforce rational transfer function type invariance
@@ -131,18 +171,17 @@ function rfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2},
 end
 
 # Interfaces
-samplingtime(s::MFD) = s.Ts
+samplingtime(s::MFD)              = s.Ts
 islfd{T,S,L}(s::MFD{T,S,Val{L}})  = false
 islfd{T,S}(s::MFD{T,S,Val{:lfd}}) = true
 isrfd{T,S,L}(s::MFD{T,S,Val{L}})  = !islfd(s)
-num(s::MFD) = s.N
-den(s::MFD) = s.D
+num(s::MFD)                       = s.N
+den(s::MFD)                       = s.D
 
 # Think carefully about how to implement numstates
-numstates(s::MFD)               = 1 #numstates(ss(s))
+numstates(s::MFD)               = degree(s.D)*length(s) #  /TODO what is the appropriate one?
 # Currently, we only allow for proper systems
 numstates(s::MFD{Val{:siso}})   = degree(s.D)
-
 numinputs(s::MFD)               = s.nu
 numoutputs(s::MFD)              = s.ny
 
@@ -197,7 +236,7 @@ function getindex(s::MFD{Val{:mimo},Val{:cont},Val{:rfd}}, I...)
   rfd(ss(s)[I...])
 end
 
-endof(s::MFD{Val{:mimo}})               = endof(s.N)
+endof(s::MFD{Val{:mimo}})        = endof(s.N)
 
 # Conversion and promotion
 promote_rule{T<:Real,S,L}(::Type{T}, ::Type{MFD{Val{:siso},S,L}}) =
@@ -291,8 +330,8 @@ function inv{M<:MFD}(s::M)
   _inv(s)
 end
 
-_inv{T,L}(s::MFD{Val{T},Val{:cont},Val{L}}) = lfd(copy(s.D), copy(s.N))
-_inv{T,L}(s::MFD{Val{T},Val{:disc},Val{L}}) = lfd(copy(s.D), copy(s.N), s.Ts)
+_inv{T,L}(s::MFD{Val{T},Val{:cont},Val{L}}) = MFD(copy(s.D), copy(s.N), Val{L})
+_inv{T,L}(s::MFD{Val{T},Val{:disc},Val{L}}) = MFD(copy(s.D), copy(s.N), s.Ts, Val{L})
 
 function _mfdinvcheck(s::MFD)
   if s.ny ≠ s.nu
@@ -300,11 +339,10 @@ function _mfdinvcheck(s::MFD)
     throw(DomainError())
   end
 
-  if norm(det(s.N)) ≈ zero(eltype(s.N))
+  if fastrank(s.N) ≠ s.nu
     warn("inv(sys): sys is not invertible")
     throw(DomainError())
   end
-  _inv(s)
 end
 
 # Negative of a transfer-function model

@@ -1,4 +1,6 @@
 ## MFDs
+using Polynomials
+using PolynomialMatrices
 
 # Defining left MFDs
 s = Poly([0, 1],:s)
@@ -8,9 +10,18 @@ M = lfd(N,D)
 @test islfd(M)
 @test !isrfd(M)
 
+# isproper
+s = Poly([0, 1],:s)
+N = PolyMatrix([2s^2+1 2])
+D = PolyMatrix([s^3+s s; s^2+s+1 1])
+M = rfd(N,D)
+
+@test !is_col_proper(M.D)
+@test isproper(M)
+
 # Defining right MFDs
 N = PolyMatrix([s -s])
-D = PolyMatrix([0 -(s^3+4*s^2+5*s+2); (s+2)^2 s+2])
+D = PolyMatrix([zero(s) -(s^3+4*s^2+5*s+2); (s+2)^2 s+2])
 M = rfd(N,D)
 @test !islfd(M)
 @test isrfd(M)

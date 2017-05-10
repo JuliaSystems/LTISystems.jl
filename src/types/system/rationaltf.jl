@@ -86,20 +86,20 @@ function _tfcheck{T,S,U<:Real,V<:Real}(mat::AbstractMatrix{RationalFunction{Val{
   end
 
   # Check properness, etc.
-  for idx in 1:length(mat)
-    numpoly   = num(mat[idx])
-    denpoly   = den(mat[idx])
-    col, row  = divrem(idx-1, ny)
-
-    if degree(numpoly) > degree(denpoly)
-      warn("RationalTF: mat[$(row+1),$(col+1)] is not proper")
-      throw(DomainError())
-    end
-    if denpoly == zero(denpoly)
-      warn("RationalTF: mat[$(row+1),$(col+1)] has a zero denominator")
-      throw(DomainError())
-    end
-  end
+  # for idx in 1:length(mat)
+  #   numpoly   = num(mat[idx])
+  #   denpoly   = den(mat[idx])
+  #   col, row  = divrem(idx-1, ny)
+  #
+  #   if degree(numpoly) > degree(denpoly)
+  #     warn("RationalTF: mat[$(row+1),$(col+1)] is not proper")
+  #     throw(DomainError())
+  #   end
+  #   if denpoly == zero(denpoly)
+  #     warn("RationalTF: mat[$(row+1),$(col+1)] has a zero denominator")
+  #     throw(DomainError())
+  #   end
+  # end
 
   return ny, nu
 end
