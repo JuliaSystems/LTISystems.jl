@@ -162,36 +162,36 @@ function tf(s::LtiSystem)
 end
 
 # Methods
-function series{T1,T2,S}(s1::LtiSystem{Val{T1},Val{S}}, s2::LtiSystem{Val{T2},Val{S}})
-  warn("series(s1, s2) not implemented for (s1::$(typeof(s1)), s2::$(typeof(s2)))")
-  throw(MethodError(series, Tuple{typeof(s1),typeof(s2)}))
-end
-
-function series(s1::LtiSystem, s2::LtiSystem)
-  warn("series(s1, s2) cannot be defined for (s1::$(typeof(s1)), s2::$(typeof(s2)))")
-  throw(MethodError(series, Tuple{typeof(s1),typeof(s2)}))
-end
-
-function parallel{T1,T2,S}(s1::LtiSystem{Val{T1},Val{S}}, s2::LtiSystem{Val{T2},Val{S}})
-  warn("parallel(s1, s2) not implemented for (s1::$(typeof(s1)), s2::$(typeof(s2)))")
-  throw(MethodError(parallel, Tuple{typeof(s1),typeof(s2)}))
-end
-
-function parallel(s1::LtiSystem, s2::LtiSystem)
-  warn("parallel(s1, s2) cannot be defined for (s1::$(typeof(s1)), s2::$(typeof(s2)))")
-  throw(MethodError(parallel, Tuple{typeof(s1),typeof(s2)}))
-end
-
-function feedback{T1,T2,S}(s1::LtiSystem{Val{T1},Val{S}}, s2::LtiSystem{Val{T2},Val{S}},
-  neg::Bool = true)
-  warn("feedback(s1, s2, neg) not implemented for (s1::$(typeof(s1)), s2::$(typeof(s2)), neg::$(typeof(neg)))")
-  throw(MethodError(feedback, Tuple{typeof(s1),typeof(s2),typeof(neg)}))
-end
-
-function feedback(s1::LtiSystem, s2::LtiSystem, neg::Bool = true)
-  warn("feedback(s1, s2, neg) cannot be defined for (s1::$(typeof(s1)), s2::$(typeof(s2)), neg::$(typeof(neg)))")
-  throw(MethodError(feedback, Tuple{typeof(s1),typeof(s2),typeof(neg)}))
-end
+# function series{T1,T2,S}(s1::LtiSystem{Val{T1},Val{S}}, s2::LtiSystem{Val{T2},Val{S}})
+#   warn("series(s1, s2) not implemented for (s1::$(typeof(s1)), s2::$(typeof(s2)))")
+#   throw(MethodError(series, Tuple{typeof(s1),typeof(s2)}))
+# end
+#
+# function series(s1::LtiSystem, s2::LtiSystem)
+#   warn("series(s1, s2) cannot be defined for (s1::$(typeof(s1)), s2::$(typeof(s2)))")
+#   throw(MethodError(series, Tuple{typeof(s1),typeof(s2)}))
+# end
+#
+# function parallel{T1,T2,S}(s1::LtiSystem{Val{T1},Val{S}}, s2::LtiSystem{Val{T2},Val{S}})
+#   warn("parallel(s1, s2) not implemented for (s1::$(typeof(s1)), s2::$(typeof(s2)))")
+#   throw(MethodError(parallel, Tuple{typeof(s1),typeof(s2)}))
+# end
+#
+# function parallel(s1::LtiSystem, s2::LtiSystem)
+#   warn("parallel(s1, s2) cannot be defined for (s1::$(typeof(s1)), s2::$(typeof(s2)))")
+#   throw(MethodError(parallel, Tuple{typeof(s1),typeof(s2)}))
+# end
+#
+# function feedback{T1,T2,S}(s1::LtiSystem{Val{T1},Val{S}}, s2::LtiSystem{Val{T2},Val{S}},
+#   neg::Bool = true)
+#   warn("feedback(s1, s2, neg) not implemented for (s1::$(typeof(s1)), s2::$(typeof(s2)), neg::$(typeof(neg)))")
+#   throw(MethodError(feedback, Tuple{typeof(s1),typeof(s2),typeof(neg)}))
+# end
+#
+# function feedback(s1::LtiSystem, s2::LtiSystem, neg::Bool = true)
+#   warn("feedback(s1, s2, neg) cannot be defined for (s1::$(typeof(s1)), s2::$(typeof(s2)), neg::$(typeof(neg)))")
+#   throw(MethodError(feedback, Tuple{typeof(s1),typeof(s2),typeof(neg)}))
+# end
 
 function minreal(s::LtiSystem)
   warn("minreal(s) not implemented for s::$(typeof(s))")

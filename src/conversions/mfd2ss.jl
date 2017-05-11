@@ -82,6 +82,7 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:rfd},M1,M2})
 
   return A, B, C, D
 end
+
 function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:lfd},M1,M2})
 
   Den, Num  = rowred(mfd.D,mfd.N)

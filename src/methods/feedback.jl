@@ -19,31 +19,31 @@ x^2 + 4x + 7
 ```
 """
 function feedback{T1<:LtiSystem, T2<:LtiSystem}(s1::T1, s2::T2)
-  /(s1, paralell(one(s1), series(s1,s2)))
+  /(s1, parallel(one(s1), series(s1,s2)))
 end
 
 feedback{T1<:LtiSystem, T2<:Real}(s1::T1, n::T2) =
-  /(s1, paralell(one(s1), series(s1, n)))
+  /(s1, parallel(one(s1), series(s1, n)))
 feedback{T1<:LtiSystem, T2<:Real}(n::T2, s1::T1) =
-  /(n, paralell(one(s1), series(n, s1)))
+  /(n, parallel(one(s1), series(n, s1)))
 
 feedback{T1<:LtiSystem, T2<:Real}(s1::T1, n::Matrix{T2}) =
-  /(s1, paralell(one(s1), series(s1, n)))
+  /(s1, parallel(one(s1), series(s1, n)))
 feedback{T1<:LtiSystem, T2<:Real}(n::Matrix{T2}, s1::T1) =
-  /(n, paralell(one(s1), series(n, s1)))
+  /(n, parallel(one(s1), series(n, s1)))
 
-# Be smart in specific cases [30x speedup]
-function feedback{T1<:DSisoRational,T2<:DSisoRational}(s1::T1, s2::T2)
-  num = numpoly(s1)*denpoly(s2)
-  den = denpoly(s1)*denpoly(s2) + numpoly(s1)*numpoly(s2)
-  tf(num,den,samplingtime(s1))
-end
-
-function feedback{T1<:CSisoRational,T2<:CSisoRational}(s1::T1, s2::T2)
-  num = numpoly(s1)*denpoly(s2)
-  den = denpoly(s1)*denpoly(s2) + numpoly(s1)*numpoly(s2)
-  tf(num,den)
-end
+# # Be smart in specific cases [30x speedup]
+# function feedback{T1<:RationalTF{T,S,U,V},T2<:RationalTF}(s1::T1, s2::T2)
+#   num = numpoly(s1)*denpoly(s2)
+#   den = denpoly(s1)*denpoly(s2) + numpoly(s1)*numpoly(s2)
+#   tf(num,den,samplingtime(s1))
+# end
+#
+# function feedback{T1<:RationalTF,T2<:RationalTF}(s1::T1, s2::T2)
+#   num = numpoly(s1)*denpoly(s2)
+#   den = denpoly(s1)*denpoly(s2) + numpoly(s1)*numpoly(s2)
+#   tf(num,den)
+# end
 
 # function feedback{T1<:DSisoZpk,T2<:DSisoZpk}(s1::T1, s2::T2)
 #   z1,p1,k1 = zpkdata(s1)
