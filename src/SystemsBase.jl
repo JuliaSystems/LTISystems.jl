@@ -90,19 +90,19 @@ include("conversions/ss2mfd.jl")
 
 
 # Response types
-# include("types/response/systemresponse.jl")
+include("types/response/systemresponse.jl")
 # include("types/response/boderesponse.jl")
 # include("types/response/nyquistresponse.jl")
 
 # Methods
 # include("methods/bode.jl")
-# include("methods/feedback.jl")
+include("methods/feedback.jl")
 include("methods/freqresp.jl")
 include("methods/minreal.jl")
 # include("methods/nyquist.jl")
-# include("methods/parallel.jl")
+include("methods/parallel.jl")
 # include("methods/reduce.jl")
 include("methods/rosenbrock.jl")
-# include("methods/series.jl")
+include("methods/series.jl")
 
 end # module
