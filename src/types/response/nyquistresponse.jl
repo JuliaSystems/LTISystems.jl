@@ -3,7 +3,7 @@ immutable NyquistResponse{T,S,U} <: SystemResponse
   real::S    # abs, i.e., |G|
   imag::U  # radians
 
-  @compat function (::Type{NyquistResponse}){T<:Real,S<:Real,U<:Real}(
+  function (::Type{NyquistResponse}){T<:Real,S<:Real,U<:Real}(
     freqs::AbstractVector{T}, real::AbstractArray{S, 3}, imag::AbstractArray{U, 3})
     @assert size(real) == size(imag) "NyquistResponse: real and imag must have same dimensions"
     @assert length(freqs) == size(real,3) "NyquistResponse: size(real,3) ≠ length(freqs)"

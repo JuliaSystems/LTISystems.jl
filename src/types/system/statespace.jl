@@ -8,8 +8,9 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
   ny::Int
   Ts::Float64
 
+  # Constructors
   # Continuous-time, single-input-single-output state-space model
-  @compat function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+  function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
     M3<:AbstractMatrix}(A::M1, B::M2, C::M3, D::Real)
     d = fill(D,1,1)
     nx, nu, ny = _sscheck(A, B, C, d)
@@ -17,7 +18,7 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
   end
 
   # Discrete-time, single-input-single-output state-space model
-  @compat function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+  function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
     M3<:AbstractMatrix}(A::M1, B::M2, C::M3, D::Real, Ts::Real)
     d = fill(D,1,1)
     nx, nu, ny = _sscheck(A, B, C, d, Ts)
@@ -26,28 +27,42 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
   end
 
   # Continuous-time, multi-input-multi-output state-space model
-  @compat function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+  function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
     M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
     nx, nu, ny = _sscheck(A, B, C, D)
     new{Val{:mimo},Val{:cont},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny, zero(Float64))
   end
-  @compat function (::Type{StateSpace{Val{:siso}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
-    @assert size(D) == (1,1) "StateSpace: The system should be SISO"
-    StateSpace(A, B, C, D[1])
-  end
 
   # Discrete-time, multi-input-multi-output state-space model
-  @compat function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
+  function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
     M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
     nx, nu, ny = _sscheck(A, B, C, D, Ts)
     new{Val{:mimo},Val{:disc},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
       convert(Float64, Ts))
   end
-  @compat function (::Type{StateSpace{Val{:siso}}}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
-    @assert size(D) == (1,1) "StateSpace: The system should be SISO"
-    StateSpace(A, B, C, D[1], Ts)
+
+  # Function calls
+  function (sys::StateSpace)(t::Real, x::AbstractVector, dx::AbstractVector, u)
+    A, B, C, D = sys.A, sys.B, sys.C, sys.D
+    ucalc = u(t, x)
+    ucalc = isa(ucalc, Real) ? [ucalc] : ucalc
+    if !isa(ucalc, AbstractVector) || length(ucalc) ≠ sys.nu || !(eltype(ucalc) <: Real)
+      warn("sys(t,x,dx,u): u(t,x) has to be an `AbstractVector` of length $(sys.nu), containing `Real` values")
+      throw(DomainError())
+    end
+    dx[:] = A*x + B*ucalc
+  end
+  function (sys::StateSpace)(t::Real, x::DEDataArray, dx::AbstractVector, u)
+    A, B, C, D = sys.A, sys.B, sys.C, sys.D
+    ucalc = u(t, x.x)
+    ucalc = isa(ucalc, Real) ? [ucalc] : ucalc
+    if !isa(ucalc, AbstractVector) || length(ucalc) ≠ sys.nu || !(eltype(ucalc) <: Real)
+      warn("sys(t,x,dx,u): u(t,x) has to be an `AbstractVector` of length $(sys.nu), containing `Real` values")
+      throw(DomainError())
+    end
+    x.u   = ucalc
+    x.y   = C*x.x + D*x.u
+    dx[:] = A*x.x + B*x.u
   end
 end
 
