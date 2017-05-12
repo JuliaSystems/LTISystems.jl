@@ -1,5 +1,14 @@
 module SystemsBase
 
+# Compatibility among different Julia versions
+using Compat
+
+# OrdinaryDiffEq
+using DiffEqBase, OrdinaryDiffEq
+
+# PolynomialMatrices-related things
+using PolynomialMatrices
+
 # Polynomials-related things
 using Polynomials
 
@@ -7,15 +16,8 @@ using Polynomials
 using RationalFunctions
 import RationalFunctions: poles
 
-# PolynomialMatrices-related things
-using PolynomialMatrices
-
 # Plotting recipes
 using RecipesBase
-
-# Compatibility among different Julia versions
-using Compat
-import Compat.view
 
 # Import conversion and promotion functions for overloading
 import Base: convert, promote_rule
@@ -34,7 +36,6 @@ import Base: start, next, done, eltype, length, size
 
 # Import printing functions
 import Base: summary
-@compat import Base.show
 
 # Import mathematical operations for overloading
 import Base: +, .+, -, .-, *, .*, /, ./, ==, !=, isapprox, transpose
@@ -76,7 +77,8 @@ export
   feedback,
   rosenbrock,
   minreal,
-  freqresp
+  freqresp,
+  simulate
 
 # System types
 include("types/system/ltisystem.jl")
@@ -88,11 +90,11 @@ include("types/system/mfd.jl")
 include("conversions/mfd2ss.jl")
 include("conversions/ss2mfd.jl")
 
-
 # Response types
 include("types/response/systemresponse.jl")
 # include("types/response/boderesponse.jl")
 # include("types/response/nyquistresponse.jl")
+include("types/response/timeresponse.jl")
 
 # Methods
 # include("methods/bode.jl")
@@ -104,5 +106,6 @@ include("methods/parallel.jl")
 # include("methods/reduce.jl")
 include("methods/rosenbrock.jl")
 include("methods/series.jl")
+include("methods/simulate.jl")
 
 end # module

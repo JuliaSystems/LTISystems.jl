@@ -3,7 +3,7 @@ immutable BodeResponse{T,S,U} <: SystemResponse
   mag::S    # abs, i.e., |G|
   phase::U  # radians
 
-  @compat function (::Type{BodeResponse}){T<:Real,S<:Real,U<:Real}(
+  function (::Type{BodeResponse}){T<:Real,S<:Real,U<:Real}(
     freqs::AbstractVector{T}, mag::AbstractArray{S, 3}, phase::AbstractArray{U, 3})
     @assert size(mag) == size(phase) "BodeResponse: mag and phase must have same dimensions"
     @assert length(freqs) == size(mag,3) "BodeResponse: size(mag,3) ≠ length(freqs)"

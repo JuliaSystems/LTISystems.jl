@@ -20,19 +20,19 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   Ts::Float64
 
   # Continuous-time, single-input-single-output MFD model
-  @compat function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, ::Type{Val{L}})
+  function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, ::Type{Val{L}})
     mfdcheck(N,D)
     new{Val{:siso},Val{:cont},Val{L},M1,M2}(N, D, 1, 1, zero(Float64))
   end
 
   # Discrete-time, single-input-single-output MFD model
-  @compat function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
+  function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
     mfdcheck(N,D,Ts)
     new{Val{:siso},Val{:disc},Val{L},M1,M2}(N, D, 1, 1, convert(Float64, Ts))
   end
 
   # Continuous-time, multi-input-multi-output MFD model
-  @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
+  function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, ::Type{Val{L}})
     ny, nu = mfdcheck(N, D, Val{L})
     _N = PolyMatrix(coeffs(N), size(N), Val{:s})
@@ -43,7 +43,7 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
   end
 
   # Discrete-time, multi-input-multi-output MFD model
-  @compat function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
+  function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
     ny, nu = mfdcheck(N, D, Val{L}, Ts)
     _N = PolyMatrix(coeffs(N), size(N), Val{:z})
