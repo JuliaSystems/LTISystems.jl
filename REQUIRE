@@ -1,5 +1,6 @@
 julia 0.5
-RationalFunctions 0.0.4
-PolynomialMatrices 0.1.1
 Compat 0.17.0
+OrdinaryDiffEq 1.0.0
+PolynomialMatrices 0.1.1
+RationalFunctions 0.0.4
 RecipesBase

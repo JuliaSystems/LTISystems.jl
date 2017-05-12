@@ -5,7 +5,7 @@ immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
   Ts::Float64
 
   # Continuous-time, single-input-single-output rational transfer function model
-  @compat function (::Type{RationalTF}){S,U<:Real,V<:Real}(r::RationalFunction{
+  function (::Type{RationalTF}){S,U<:Real,V<:Real}(r::RationalFunction{
     Val{:s},Val{S},U,V})
     mat     = fill(r, 1, 1)
     ny, nu  = _tfcheck(mat)
@@ -13,7 +13,7 @@ immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
   end
 
   # Discrete-time, single-input-single-output rational transfer function model
-  @compat function (::Type{RationalTF}){S,U<:Real,V<:Real}(r::RationalFunction{
+  function (::Type{RationalTF}){S,U<:Real,V<:Real}(r::RationalFunction{
     Val{:z},Val{S},U,V}, Ts::Real)
     mat     = fill(r, 1, 1)
     ny, nu  = _tfcheck(mat, Ts)
@@ -21,12 +21,12 @@ immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
   end
 
   # Continuous-time, multi-input-multi-output rational transfer function model
-  @compat function (::Type{RationalTF}){S,U<:Real,V<:Real}(
+  function (::Type{RationalTF}){S,U<:Real,V<:Real}(
     mat::AbstractMatrix{RationalFunction{Val{:s},Val{S},U,V}})
     ny, nu  = _tfcheck(mat)
     new{Val{:mimo},Val{:cont},Val{S},typeof(mat)}(mat, nu, ny, zero(Float64))
   end
-  @compat function (::Type{RationalTF}){T<:Real,S}(mat::AbstractMatrix{T},
+  function (::Type{RationalTF}){T<:Real,S}(mat::AbstractMatrix{T},
     t::Type{Val{S}} = Val{:notc})
     m = map(x->RationalFunction(x, :s), mat)
     ny, nu  = _tfcheck(m)
@@ -34,12 +34,12 @@ immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
   end
 
   # Discrete-time, multi-input-multi-output rational transfer function model
-  @compat function (::Type{RationalTF}){S,U<:Real,V<:Real}(
+  function (::Type{RationalTF}){S,U<:Real,V<:Real}(
     mat::AbstractMatrix{RationalFunction{Val{:z},Val{S},U,V}}, Ts::Real)
     ny, nu  = _tfcheck(mat, Ts)
     new{Val{:mimo},Val{:disc},Val{S},typeof(mat)}(mat, nu, ny, convert(Float64, Ts))
   end
-  @compat function (::Type{RationalTF}){T<:Real,S}(mat::AbstractMatrix{T},
+  function (::Type{RationalTF}){T<:Real,S}(mat::AbstractMatrix{T},
     Ts::Real, t::Type{Val{S}} = Val{:notc})
     m = map(x->RationalFunction(x, :z), mat)
     ny, nu  = _tfcheck(m)
@@ -48,22 +48,22 @@ immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
 end
 
 # Warn the user in other type constructions
-@compat function (::Type{RationalTF})(r::RationalFunction)
+function (::Type{RationalTF})(r::RationalFunction)
   warn("tf(r): r can only be a real-coefficient `RationalFunction` of variable `:s`")
   throw(DomainError())
 end
 
-@compat function (::Type{RationalTF})(r::RationalFunction, Ts::Real)
+function (::Type{RationalTF})(r::RationalFunction, Ts::Real)
   warn("tf(r, Ts): r can only be a real-coefficient `RationalFunction` of variable `:z`")
   throw(DomainError())
 end
 
-@compat function (::Type{RationalTF})(m::AbstractMatrix)
+function (::Type{RationalTF})(m::AbstractMatrix)
   warn("tf(m): m can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:s`")
   throw(DomainError())
 end
 
-@compat function (::Type{RationalTF})(m::AbstractMatrix, Ts::Real)
+function (::Type{RationalTF})(m::AbstractMatrix, Ts::Real)
   warn("tf(m, Ts): m can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:z`")
   throw(DomainError())
 end

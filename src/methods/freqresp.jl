@@ -20,13 +20,13 @@ freqresp{S,M<:Real}(sys::LtiSystem{Val{S},Val{:disc}}, X::AbstractArray{M}) =
   sys(exp(1im*samplingtime(sys)*X))
 
 # Evaluate system models at given complex numbers
-@compat (sys::RationalTF{Val{:siso}})(x::Number)                      =
+(sys::RationalTF{Val{:siso}})(x::Number)                      =
   (f = sys.mat[1]; convert(Complex128, f(x)))
-@compat (sys::RationalTF{Val{:siso}}){M<:Number}(X::AbstractArray{M}) =
+(sys::RationalTF{Val{:siso}}){M<:Number}(X::AbstractArray{M}) =
   (f = sys.mat[1]; Complex128[f(x) for x in X])
-@compat (sys::RationalTF{Val{:mimo}})(x::Number)                      =
+(sys::RationalTF{Val{:mimo}})(x::Number)                      =
   Complex128[f(x) for f in sys.mat]
-@compat (sys::RationalTF{Val{:mimo}}){M<:Number}(X::AbstractArray{M}) =
+(sys::RationalTF{Val{:mimo}}){M<:Number}(X::AbstractArray{M}) =
   Complex128[f(x) for f in sys.mat, x in X]
 
 # Implements algorithm found in:
@@ -72,14 +72,10 @@ function _eval{M<:Number}(sys::StateSpace, X::AbstractArray{M})
   resp
 end
 
-@compat (sys::StateSpace{Val{:siso}})(x::Number)                      =
-  _eval(sys, x)[1]
-@compat (sys::StateSpace{Val{:siso}}){M<:Number}(X::AbstractArray{M}) =
-  reshape(_eval(sys, X), size(X))
-@compat (sys::StateSpace{Val{:mimo}})(x::Number)                      =
-  _eval(sys, x)
-@compat (sys::StateSpace{Val{:mimo}}){M<:Number}(X::AbstractArray{M}) =
-  _eval(sys, X)
+(sys::StateSpace{Val{:siso}})(x::Number)                      = _eval(sys, x)[1]
+(sys::StateSpace{Val{:siso}}){M<:Number}(X::AbstractArray{M}) = reshape(_eval(sys, X), size(X))
+(sys::StateSpace{Val{:mimo}})(x::Number)                      = _eval(sys, x)
+(sys::StateSpace{Val{:mimo}}){M<:Number}(X::AbstractArray{M}) = _eval(sys, X)
 
 """
 `ipiv, info = luhessfact!(H)`
