@@ -45,6 +45,19 @@ immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
     ny, nu  = _tfcheck(m)
     new{Val{:mimo},Val{:disc},t,typeof(m)}(m, nu, ny, convert(Float64, Ts))
   end
+
+  # Function calls
+  # Evaluate system models at given complex numbers
+  (sys::RationalTF{Val{:siso}})(x::Number)                                    =
+    (f = sys.mat[1]; convert(Complex128, f(x)))
+  (sys::RationalTF{Val{:siso}}){M<:Number}(X::AbstractArray{M})               =
+    (f = sys.mat[1]; Complex128[f(x) for x in X])
+  (sys::RationalTF{Val{:mimo}})(x::Number)                                    =
+    Complex128[f(x) for f in sys.mat]
+  (sys::RationalTF{Val{:mimo}}){M<:Number}(X::AbstractArray{M})               =
+    Complex128[f(x) for f in sys.mat, x in X]
+  (sys::RationalTF){T<:Real}(; ω::Union{T, AbstractArray{T}} = zero(Float64)) =
+    freqresp(sys, ω)
 end
 
 # Warn the user in other type constructions
@@ -233,17 +246,17 @@ promote_rule{T1<:Real,T2,S,U,V}(::Type{T1}, ::Type{RationalTF{Val{T2},Val{S},Val
 promote_rule{T<:AbstractMatrix,S,U,V}(::Type{T}, ::Type{RationalTF{Val{:mimo},Val{S},Val{U},V}}) =
   RationalTF{Val{:mimo},Val{S},Val{U}}
 
-convert{U}(::Type{RationalTF{Val{:siso},Val{:cont},Val{U}}}, g::Real) =
+convert{U,V}(::Type{RationalTF{Val{:siso},Val{:cont},Val{U},V}}, g::Real) =
   tf(RationalFunction(g, :s, Val{U}))
-convert{U}(::Type{RationalTF{Val{:siso},Val{:disc},Val{U}}}, g::Real) =
+convert{U,V}(::Type{RationalTF{Val{:siso},Val{:disc},Val{U},V}}, g::Real) =
   tf(RationalFunction(g, :z, Val{U}), zero(Float64))
-convert{U}(::Type{RationalTF{Val{:mimo},Val{:cont},Val{U}}}, g::Real) =
+convert{U,V}(::Type{RationalTF{Val{:mimo},Val{:cont},Val{U},V}}, g::Real) =
   tf(fill(g,1,1), Val{U})
-convert{U}(::Type{RationalTF{Val{:mimo},Val{:disc},Val{U}}}, g::Real) =
+convert{U,V}(::Type{RationalTF{Val{:mimo},Val{:disc},Val{U},V}}, g::Real) =
   tf(fill(g,1,1), zero(Float64), Val{U})
-convert{U}(::Type{RationalTF{Val{:mimo},Val{:cont},Val{U}}}, g::AbstractMatrix) =
+convert{U,V}(::Type{RationalTF{Val{:mimo},Val{:cont},Val{U},V}}, g::AbstractMatrix) =
   tf(g)
-convert{U}(::Type{RationalTF{Val{:mimo},Val{:disc},Val{U}}}, g::AbstractMatrix) =
+convert{U,V}(::Type{RationalTF{Val{:mimo},Val{:disc},Val{U},V}}, g::AbstractMatrix) =
   tf(g, zero(Float64))
 
 # Multiplicative and additive identities (meaningful only for SISO)
