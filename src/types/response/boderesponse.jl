@@ -22,6 +22,11 @@ immutable BodeResponse{T<:Real} <: SystemResponse
   end
 end
 
+_bode{T<:Real}(sys::LtiSystem{Val{:siso}}, ω::AbstractVector{T})  =
+  reshape(freqresp(sys, ω), size(sys)..., length(ω))
+_bode{T<:Real}(sys::LtiSystem{Val{:mimo}}, ω::AbstractVector{T})  =
+  freqresp(sys, ω)
+
 """
     bode(sys, ω) -> br
 
@@ -53,16 +58,14 @@ when `using Plots`.
 
 **See also:** `freqresp`, `nyquist`.
 """
-_bode{T<:Real}(sys::LtiSystem{Val{:siso}}, ω::AbstractVector{T})  =
-  reshape(freqresp(sys, ω), size(sys)..., length(ω))
-_bode{T<:Real}(sys::LtiSystem{Val{:mimo}}, ω::AbstractVector{T})  =
-  freqresp(sys, ω)
-
 function bode{T}(sys::LtiSystem, ω::AbstractVector{T})
   # TODO: should we check for ω ≥ 0 ?
   fr = _bode(sys, ω)
   BodeResponse(ω, abs(fr), unwrap!(angle(fr)))
 end
+
+bode{T}(sys::LtiSystem{Val{T},Val{:disc}}) =
+  bode(sys, logspace(-6, log10(π/samplingtime(sys)), 1000))
 
 @recipe function f(br::BodeResponse; iopairs = Tuple{Int,Int}[], freqs = :rads,
   magnitude = :dB, phase = :deg)
