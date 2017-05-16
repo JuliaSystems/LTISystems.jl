@@ -25,7 +25,7 @@ start(res::TimeResponse)        = (res.tsloc = 1)
 next(res::TimeResponse, state)  = (state += 1; res.tsloc = state; (res, state))
 done(res::TimeResponse, state)  = (state ≥ length(res.t))
 
-@recipe function f{T,S}(res::TimeResponse{T,Val{S}}; outputs  = 1:size(res.y, 2),
+@recipe function f{T,S}(res::TimeResponse{T,Val{S}}; outputs = 1:size(res.y, 2),
   inputs = Int[], states = Int[])
 
   numplots  = 0
@@ -111,7 +111,7 @@ done(res::TimeResponse, state)  = (state ≥ length(res.t))
     curplot += 1
     @series begin
       subplot     :=  curplot
-      seriestype  :=  S == :cont ? :path : :steppre
+      seriestype  :=  ifelse(S == :cont, :path, :steppre)
       t_plotted[1:endidx], y_plotted[1:endidx,:]
     end
   end
@@ -120,7 +120,7 @@ done(res::TimeResponse, state)  = (state ≥ length(res.t))
     curplot += 1
     @series begin
       subplot     :=  curplot
-      seriestype  :=  S == :cont ? :path : :steppre
+      seriestype  :=  ifelse(S == :cont, :path, :steppre)
       t_plotted[1:endidx], u_plotted[1:endidx,:]
     end
   end
@@ -129,7 +129,7 @@ done(res::TimeResponse, state)  = (state ≥ length(res.t))
     curplot += 1
     @series begin
       subplot     :=  curplot
-      seriestype  :=  S == :cont ? :path : :steppre
+      seriestype  :=  ifelse(S == :cont, :path, :steppre)
       t_plotted[1:endidx], x_plotted[1:endidx,:]
     end
   end

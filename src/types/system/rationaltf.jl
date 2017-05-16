@@ -28,7 +28,7 @@ immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
   end
   function (::Type{RationalTF}){T<:Real,S}(mat::AbstractMatrix{T},
     t::Type{Val{S}} = Val{:notc})
-    m = map(x->RationalFunction(x, :s), mat)
+    m = map(x->RationalFunction(x, :s, t), mat)
     ny, nu  = _tfcheck(m)
     new{Val{:mimo},Val{:cont},t,typeof(m)}(m, nu, ny, zero(Float64))
   end
@@ -41,7 +41,7 @@ immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
   end
   function (::Type{RationalTF}){T<:Real,S}(mat::AbstractMatrix{T},
     Ts::Real, t::Type{Val{S}} = Val{:notc})
-    m = map(x->RationalFunction(x, :z), mat)
+    m = map(x->RationalFunction(x, :z, t), mat)
     ny, nu  = _tfcheck(m)
     new{Val{:mimo},Val{:disc},t,typeof(m)}(m, nu, ny, convert(Float64, Ts))
   end
@@ -56,28 +56,33 @@ immutable RationalTF{T,S,U,V} <: LtiSystem{T,S}
     Complex128[f(x) for f in sys.mat]
   (sys::RationalTF{Val{:mimo}}){M<:Number}(X::AbstractArray{M})               =
     Complex128[f(x) for f in sys.mat, x in X]
-  (sys::RationalTF){T<:Real}(; ω::Union{T, AbstractArray{T}} = zero(Float64)) =
+  function (sys::RationalTF){T<:Real}(; ω::Union{T, AbstractArray{T}} = Float64[])
+    if isempty(ω)
+      warn("sys(): Provide an argument for the function call. Refer to `?freqresp`.")
+      throw(DomainError())
+    end
     freqresp(sys, ω)
+  end
 end
 
 # Warn the user in other type constructions
 function (::Type{RationalTF})(r::RationalFunction)
-  warn("tf(r): r can only be a real-coefficient `RationalFunction` of variable `:s`")
+  warn("tf(r): `r` can only be a real-coefficient `RationalFunction` of variable `:s`")
   throw(DomainError())
 end
 
 function (::Type{RationalTF})(r::RationalFunction, Ts::Real)
-  warn("tf(r, Ts): r can only be a real-coefficient `RationalFunction` of variable `:z`")
+  warn("tf(r, Ts): `r` can only be a real-coefficient `RationalFunction` of variable `:z`")
   throw(DomainError())
 end
 
 function (::Type{RationalTF})(m::AbstractMatrix)
-  warn("tf(m): m can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:s`")
+  warn("tf(m): `m` can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:s`")
   throw(DomainError())
 end
 
 function (::Type{RationalTF})(m::AbstractMatrix, Ts::Real)
-  warn("tf(m, Ts): m can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:z`")
+  warn("tf(m, Ts): `m` can only be an `AbstractMatrix` of real-coefficient `RationalFunction` objects of variable `:z`")
   throw(DomainError())
 end
 
@@ -86,7 +91,7 @@ function _tfcheck{T,S,U<:Real,V<:Real}(mat::AbstractMatrix{RationalFunction{Val{
   Val{S},U,V}}, Ts::Real = zero(Float64))
   # Check sampling time
   if Ts < zero(Ts) || isinf(Ts)
-    warn("RationalTF: Ts must be a non-negative real number")
+    warn("tf(m, Ts): `Ts` must be a non-negative real number")
     throw(DomainError())
   end
 
@@ -94,22 +99,22 @@ function _tfcheck{T,S,U<:Real,V<:Real}(mat::AbstractMatrix{RationalFunction{Val{
   ny, nu = size(mat)
 
   if ny == 0 || nu == 0
-    warn("RationalTF: `min(nu, ny) = 0`")
+    warn("tf(m[, Ts]): `min(nu, ny) = 0`")
     throw(DomainError())
   end
 
-  # Check properness, etc.
+  # # Check properness, etc.
   # for idx in 1:length(mat)
-  #   numpoly   = num(mat[idx])
-  #   denpoly   = den(mat[idx])
-  #   col, row  = divrem(idx-1, ny)
+  #   col, row        = divrem(idx-1, ny)
+  #   numdeg, dendeg  = degree(mat[idx])
+  #   denpoly         = den(mat[idx])
   #
-  #   if degree(numpoly) > degree(denpoly)
-  #     warn("RationalTF: mat[$(row+1),$(col+1)] is not proper")
+  #   if numdeg > dendeg
+  #     warn("tf(m[, Ts]): `m[$(row+1),$(col+1)]` is not proper")
   #     throw(DomainError())
   #   end
-  #   if denpoly == zero(denpoly)
-  #     warn("RationalTF: mat[$(row+1),$(col+1)] has a zero denominator")
+  #   if denpoly ≈ zero(denpoly)
+  #     warn("tf(m[, Ts]): `m[$(row+1),$(col+1)]` has a zero denominator")
   #     throw(DomainError())
   #   end
   # end
@@ -140,7 +145,7 @@ tf(num::Poly, den::Poly, Ts::Real)= RationalTF(RationalFunction(num, den), Ts)
 function tf(num::AbstractVector, den::AbstractVector, Ts::Real, var::Symbol)
   vars    = [:z̄,:q̄,:qinv,:zinv]
   if var ∉ vars
-    warn("tf: $(var) ∉ ", vars)
+    warn("tf(num,den,Ts,var): `var` ∉ ", vars)
     throw(DomainError())
   end
 
@@ -158,19 +163,19 @@ function tf(num::AbstractVector, den::AbstractVector, Ts::Real, var::Symbol)
 end
 
 # Continuous-time, multi-input-multi-output rational transfer function model
-tf{T,S,U,V}(mat::AbstractMatrix{RationalFunction{Val{T},Val{S},U,V}})           =
+tf{S,U,V}(mat::AbstractMatrix{RationalFunction{Val{:s},Val{S},U,V}})            =
   RationalTF(mat)
 
 # Discrete-time, multi-input-multi-output rational transfer function model
-tf{T,S,U,V}(mat::AbstractMatrix{RationalFunction{Val{T},Val{S},U,V}}, Ts::Real) =
+tf{S,U,V}(mat::AbstractMatrix{RationalFunction{Val{:z},Val{S},U,V}}, Ts::Real)  =
   RationalTF(mat, Ts)
 
 # Continuous-time, multi-input-multi-output rational transfer function model
-tf{T<:Real,S}(mat::AbstractMatrix{T}, t::Type{Val{S}} = Val{:notc})           =
+tf{T<:Real,S}(mat::AbstractMatrix{T}, t::Type{Val{S}} = Val{:notc})             =
   RationalTF(mat, t)
 
 # Discrete-time, multi-input-multi-output rational transfer function model
-tf{T<:Real,S}(mat::AbstractMatrix{T}, Ts::Real, t::Type{Val{S}} = Val{:notc}) =
+tf{T<:Real,S}(mat::AbstractMatrix{T}, Ts::Real, t::Type{Val{S}} = Val{:notc})   =
   RationalTF(mat, Ts, t)
 
 # Interfaces
@@ -309,40 +314,26 @@ function inv(s::RationalTF{Val{:mimo},Val{:disc}})
   RationalTF(mat, s.Ts)
 end
 
-# # Invariant zeros of a transfer-function model
-# function zeros(s::RationalTF)
-#   Ar, Br, Cr, Dr, mr, nr, pr        = reduce(s.A, s.B, s.C, s.mat)
-#   if nr == 0
-#     return Complex{Float64}[]
-#   end
-#   Arc, Brc, Crc, Drc, mrc, nrc, prc = reduce(Ar.', Cr.', Br.', Dr.')
-#   if nrc == 0
-#     return Complex{Float64}[]
-#   end
-#
-#   svdobj  = svdfact([Crc Drc], thin = false)
-#   W       = flipdim(svdobj.Vt', 2)
-#   Af      = [Arc Brc]*W[:, 1:nrc]
-#
-#   if mrc == 0
-#     zerovalues = eigfact(Af).values
-#     return zerovalues
-#   else
-#     Bf    = W[1:nrc,1:nrc]
-#     zerovalues = eigfact(Af, Bf).values
-#     return zerovalues
-#   end
-# end
-#
-# # Transmission zeros of a transfer-function model
-# tzeros(s::RationalTF) = zeros(minreal(s))
-#
-# # Poles of a transfer-function model
-# function poles(s::RationalTF)
-#   Aₘ, _, _, _ = minreal(s.A, s.B, s.C, s.mat)
-#   return eigfact(Aₘ).values
-# end
-#
+# Invariant zeros of a transfer-function model
+zeros(s::RationalTF{Val{:siso}}) = roots(Base.num(s.mat[1]))
+function zeros(s::RationalTF{Val{:mimo}})
+  # TODO: Implement an efficient version. For now, the below seems to be working
+  poles(1/det(s.mat))
+end
+
+# Transmission zeros of a transfer-function model
+tzeros(s::RationalTF) = zeros(minreal(s))
+
+# Poles of a transfer-function model
+poles(s::RationalTF{Val{:siso}}) = roots(Base.den(s.mat[1]))
+function poles(s::RationalTF{Val{:mimo}})
+  poleset = Set{Complex128}()
+  for r in s.mat
+    push!(poleset, poles(r)...)
+  end
+  return [pole for pole in poleset]
+end
+
 # Negative of a transfer-function model
 -(s::RationalTF{Val{:siso},Val{:cont}}) = RationalTF(-s.mat[1])
 -(s::RationalTF{Val{:siso},Val{:disc}}) = RationalTF(-s.mat[1], s.Ts)

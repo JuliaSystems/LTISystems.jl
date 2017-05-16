@@ -60,10 +60,8 @@ export
   zeros,
   tzeros,
   zpkdata,
-  numvec,
-  denvec,
-  numpoly,
-  denpoly,
+  num,
+  den,
   # Constructors
   mfd,
   lfd,
@@ -74,14 +72,18 @@ export
   islfd,
   isrfd,
   # Methods
-  series,
-  parallel,
+  bode,
   feedback,
-  rosenbrock,
-  minreal,
   freqresp,
+  minreal,
+  nyquist,
+  parallel,
   pzmap,
-  simulate
+  reduce,
+  rosenbrock,
+  series,
+  simulate,
+  unwrap, unwrap!
 
 # System types
 include("types/system/ltisystem.jl")
@@ -111,5 +113,6 @@ include("methods/reduce.jl")
 include("methods/rosenbrock.jl")
 include("methods/series.jl")
 include("methods/simulate.jl")
+include("methods/unwrap.jl")
 
 end # module

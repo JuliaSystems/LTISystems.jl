@@ -1,14 +1,32 @@
 """
-`fr, ω = freqresp(sys,ω)`
+    freqresp(sys, ω) -> fr
 
-Evaluate the frequency response of continuous- or discrete-time systems
+Return the frequency response `fr` of a continuous- or discrete-time system `sys`
+over the `Real` frequency value(s) `ω`.
 
-`G(jω) = C*((jωI -A)^-1)*B + D`
-`G(e^jωTs) = C*((e^{jω}I -A)^-1)*B + D`
+The return type depends on the input pair `sys` and `ω`:
 
-of system `sys` over the frequency value or vector `ω`.
-`freqresp` returns `ω` together with the frequency response `fr` only if `ω` is
-a vector. Otherwise, only `fr` is returned.
+  * When `sys` is a single-input single-output system and `ω` is a scalar, `fr`
+    is a scalar,
+  * When `sys` is a single-input single-output system and `ω` is an array, `fr`
+    is an array with the same dimensions as `ω`,
+  * When `sys` is a multiple-input multiple-output system and `ω` is a scalar,
+    `fr` is a matrix with the same simensions as `size(sys)`,
+  * When `sys` is a multiple-input multiple-output system and `ω` is an array,
+    `fr` is an array with the same dimensions as `(size(sys)..., size(ω)...)`.
+
+Shorthand function call notations are defined for frequency-related responses:
+
+  * `sys(x)` evaluates the system `sys` at `Number`s or `Array`s of `Number`s `x`,
+    and,
+  * `sys(ω = ω₀)` evaluates the system `sys` at `Real` or `Array`s of `Real`
+    frequency values `ω₀`, *i.e.*, `sys(ω = ω₀) = freqresp(sys, ω)`.
+
+Please note that `freqresp(sys, ω₀) = sys(1im*ω₀)` for continuous-time systems,
+and `freqresp(sys, ω₀) = sys(exp(1im*samplingtime(sys)*ω₀))` for discrete-time
+systems.
+
+**See also:** `bode`, `nyquist`, `samplingtime`.
 """
 freqresp{S}(sys::LtiSystem{Val{S},Val{:cont}}, x::Real)                     =
   sys(1im*x)
@@ -18,16 +36,6 @@ freqresp{S}(sys::LtiSystem{Val{S},Val{:disc}}, x::Real)                     =
   sys(exp(1im*samplingtime(sys)*x))
 freqresp{S,M<:Real}(sys::LtiSystem{Val{S},Val{:disc}}, X::AbstractArray{M}) =
   sys(exp(1im*samplingtime(sys)*X))
-
-# Evaluate system models at given complex numbers
-(sys::RationalTF{Val{:siso}})(x::Number)                      =
-  (f = sys.mat[1]; convert(Complex128, f(x)))
-(sys::RationalTF{Val{:siso}}){M<:Number}(X::AbstractArray{M}) =
-  (f = sys.mat[1]; Complex128[f(x) for x in X])
-(sys::RationalTF{Val{:mimo}})(x::Number)                      =
-  Complex128[f(x) for f in sys.mat]
-(sys::RationalTF{Val{:mimo}}){M<:Number}(X::AbstractArray{M}) =
-  Complex128[f(x) for f in sys.mat, x in X]
 
 # Implements algorithm found in:
 # Laub, A.J., "Efficient Multivariable Frequency Response Computations",
@@ -72,46 +80,34 @@ function _eval{M<:Number}(sys::StateSpace, X::AbstractArray{M})
   resp
 end
 
-(sys::StateSpace{Val{:siso}})(x::Number)                      = _eval(sys, x)[1]
-(sys::StateSpace{Val{:siso}}){M<:Number}(X::AbstractArray{M}) = reshape(_eval(sys, X), size(X))
-(sys::StateSpace{Val{:mimo}})(x::Number)                      = _eval(sys, x)
-(sys::StateSpace{Val{:mimo}}){M<:Number}(X::AbstractArray{M}) = _eval(sys, X)
-
 """
-`ipiv, info = luhessfact!(H)`
+    luhessfact!(H) -> ipiv, info
 
-To compute an LU factorization of an n x m upper Hessenberg matrix H
-using partial pivoting with row interchanges.
-Based on the SLICOT routine MB02SZ
+Compute an LU factorization of an `n×m` upper Hessenberg matrix `H` using partial
+pivoting with row interchanges.
+
+Based on the SLICOT routine `MB02SZ`.
 
 Input/Output Parameters
 
-H       (input/output) n x m matrix
-        On entry, the n x m upper Hessenberg matrix to be factored.
-        On exit, the factors L and U from the factorization H = P*L*U;
-        the unit diagonal elements of L are not stored, and L is lower bidiagonal.
-
-ipiv    (output) Integer vector of dimension m
-        The pivot indices; for 1 <= i <= m, row i of the matrix
-        was interchanged with row ipiv(i).
-
-Error Indicator
-
-info      Integer
-= 0:      successful exit;
-= i > 0:  U(i,i) is exactly zero. The
-          factorization has been completed, but the factor U
-          is exactly singular, and division by zero will occur
-          if it is used to solve a system of equations.
+  * `H`: Input/output, `n×m` matrix. At input, the `n×m` upper Hessenberg matrix
+    to be factored. At output, the factors `L` and `U` from the factorization
+    `H = P*L*U`; the unit diagonal elements of `L` are not stored, and `L` is lower
+    bidiagonal.
+  * `ipiv`: Output, Integer vector of length `m`. The pivot indices; for
+    `1 ≤ i ≤ m`, row `i` of the matrix was interchanged with row `ipiv(i)`.
+  * `info`: Output, Integer. `info = 0` implies successful exit. `info = i > 0`
+    implies `U(i,i)` is exactly zero. The factorization has been completed, but
+    the factor `U` is exactly singular, and division by zero will occur if it is
+    used to solve a system of equations.
 """
 function luhessfact!{T<:Number}(H::AbstractMatrix{T})
   n, m = size(H)
-  ipiv = zeros(Int,m)
 
-  info = 0
+  ipiv = zeros(Int,m)
+  info::Int = 0
 
   for j = 1:m
-
     # Find pivot and test for singularity.
     jp = j
 
@@ -122,8 +118,7 @@ function luhessfact!{T<:Number}(H::AbstractMatrix{T})
     end
     ipiv[j] = jp
 
-    if H[jp,j] != zero(T)
-
+    if H[jp,j] ≉ zero(T)
       # Apply the interchange to columns J:N.
       if jp != j
         for i = j:m
@@ -132,7 +127,6 @@ function luhessfact!{T<:Number}(H::AbstractMatrix{T})
           H[jp,i] = temp
         end
       end
-
       # Compute element J+1 of J-th column.
       if j < m
         H[j+1, j] /= H[j,j]
@@ -152,32 +146,27 @@ function luhessfact!{T<:Number}(H::AbstractMatrix{T})
 end
 
 """
-`hesssolve!(H, ipiv, B)`
+    hesssolve!(H, ipiv, B)`
 
-To solve the system of linear equations H * X = B
-with an upper Hessenberg N-by-N matrix H using the LU
-factorization computed by `luhessfact`.
-Based on the SLICOT routine MB02RZ.
+Solve the system of linear equations `H * X = B` with an upper Hessenberg `N×N`
+matrix `H` using the `LU` factorization computed by `luhessfact!`.
+
+Based on the SLICOT routine `MB02RZ`.
 
 Input/Output Parameters
 
-H      (input) Matrix LDH x N, containing
-       the factors L and U from the factorization H = P*L*U
-       as computed by `luhessfact!`.
-
-ipiv   (input) Integer vector of dimension N, containing
-       the pivot indices from `luhessfact!`; for 1<=i<=N, row i of the
-       matrix was interchanged with row ipiv(i).
-
-B      (input/output) Matrix LDB x NRHS
-       On entry, the right hand side matrix B.
-       On exit, the solution matrix X.
+  * `H`: Input, `LDH×N` matrix, containing the factors `L` and `U` from the
+    factorization `H = P*L*U` as computed by `luhessfact!`.
+  * `ipiv`: Input, Integer vector of dimension `N`, containing the pivot indices
+    from `luhessfact!`; for `1 ≤ i ≤ N`, row `i` of the matrix was interchanged
+    with row `ipiv(i)`.
+  * `B`: Input/output, `LDB×NRHS` matrix. At input, the right hand side matrix
+    `B`. At output, the solution matrix `X`.
 """
 function hesssolve!{T<:Number}(H::AbstractMatrix{T},
   ipiv::AbstractVector{Int}, B::AbstractMatrix{T})
-  LDH, N = size(H)
+  LDH, N    = size(H)
   LDB, NRHS = size(B)
-
   # Solve L * X = B, overwriting B with X.
   #
   # L is represented as a product of permutations and unit lower
@@ -186,12 +175,11 @@ function hesssolve!{T<:Number}(H::AbstractMatrix{T},
   # the identity matrix.
   for j = 1:N-1
     jp = ipiv[j]
-
     if jp != j
       for i = 1:NRHS
-        temp = B[jp,i]
+        temp    = B[jp,i]
         B[jp,i] = B[j,i]
-        B[j,i] = temp
+        B[j,i]  = temp
       end
     end
     B[j+1,:] -= H[j+1,j]*B[j,:]

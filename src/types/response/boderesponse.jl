@@ -1,91 +1,139 @@
-immutable BodeResponse{T,S,U} <: SystemResponse
-  freqs::T  # rad/sec
-  mag::S    # abs, i.e., |G|
-  phase::U  # radians
+immutable BodeResponse{T<:Real} <: SystemResponse
+  freqs::Vector{T}  # rad/sec
+  mag::Array{T,3}   # abs, i.e., |G|
+  phase::Array{T,3} # radians
 
-  function (::Type{BodeResponse}){T<:Real,S<:Real,U<:Real}(
-    freqs::AbstractVector{T}, mag::AbstractArray{S, 3}, phase::AbstractArray{U, 3})
-    @assert size(mag) == size(phase) "BodeResponse: mag and phase must have same dimensions"
-    @assert length(freqs) == size(mag,3) "BodeResponse: size(mag,3) ≠ length(freqs)"
-    # TODO: Do we need an assertion for max ≥ 0 and freqs ≥ 0, too?
+  function (::Type{BodeResponse}){T1<:Real,T2<:Real,T3<:Real}(
+    freqs::AbstractVector{T1}, mag::AbstractArray{T2,3}, phase::AbstractArray{T3,3})
+    if size(mag) ≠ size(phase)
+      warn("BodeResponse(freqs, mag, phase): `mag` and `phase` must have same dimensions")
+      throw(DomainError())
+    elseif length(freqs) ≠ size(mag,3)
+      warn("BodeResponse(freqs, mag, phase): `size(mag,3) ≠ length(freqs)`")
+      throw(DomainError())
+    elseif any(mag .≤ zero(T2))
+      warn("BodeResponse(freqs, mag, phase): `mag` values cannot be negative")
+      throw(DomainError())
+    end
 
-    new{typeof(freqs),typeof(mag),typeof(phase)}(freqs, mag, phase)
+    T = promote_type(T1,T2,T3)
+
+    new{T}(convert(Vector{T}, freqs), convert(Array{T,3}, mag), convert(Array{T,3}, phase))
   end
 end
 
-# Plot everything
-@recipe f(b::BodeResponse                     ) = (b, 1:size(b.mag,1), 1:size(b.mag,2))
-@recipe f(b::BodeResponse, ::Colon            ) = (b, 1:size(b.mag,1), 1:size(b.mag,2))
-@recipe f(b::BodeResponse, ::Colon, ::Colon   ) = (b, 1:size(b.mag,1), 1:size(b.mag,2))
+"""
+    bode(sys, ω) -> br
 
-# Plot a single (sub)system
-@recipe f(b::BodeResponse, row::Int, col::Int ) = (b, row:row, col:col)
+Return Bode response type `br` for the system `sys` over the `Real` angular frequency
+`Vector`, `ω`.
 
-# Plot a given output for some outputs
-@recipe f(b::BodeResponse, row::Int, ::Colon              ) = (b, row:row, 1:size(b.mag,2))
-@recipe f(b::BodeResponse, row::Int, cols::AbstractVector ) = (b, row:row, cols           )
+`br` is a custom data type (`BodeResponse`) containing
 
-# Plot some outputs for a given input
-@recipe f(b::BodeResponse, ::Colon, col::Int              ) = (b, 1:size(b.mag,1), col:col)
-@recipe f(b::BodeResponse, rows::AbstractVector, col::Int ) = (b, rows,            col:col)
+  * Frequency values (`br.freqs`) in rad/sec, over which the frequency response
+    is taken,
+  * Magnitude (`br.mag`) in absolute values, and,
+  * Phase shift (`br.phase`) in radians.
 
-# Plot all outputs for some inputs
-@recipe f(b::BodeResponse, ::Colon, cols::AbstractVector  ) = (b, 1:size(b.mag,1), cols   )
+Plotting recipe is defined for `br`, which allows for `plot(br; <keyword arguments>)`
+when `using Plots`.
 
-# Plot some outputs for all inputs
-@recipe f(b::BodeResponse, rows::AbstractVector, ::Colon  ) = (b, rows, 1:size(b.mag,2)   )
+# Arguments
 
-# Plot some outputs for some inputs
-@recipe function f(b::BodeResponse, rows::AbstractVector, cols::AbstractVector)
-  @assert 1 ≤ minimum(rows) ≤ maximum(rows) ≤ size(b.mag,1) "plot(b::BodeResponse, rows, cols): rows out of bounds"
-  @assert 1 ≤ minimum(cols) ≤ maximum(cols) ≤ size(b.mag,2) "plot(b::BodeResponse, rows, cols): cols out of bounds"
+  * `iopairs = Tuple{Int,Int}[]`: list of input-output pairs to draw the Bode
+    plot of. When empty, all input-output pairs will be plotted. `iopairs` can
+    be either a single `Tuple{Int,Int}` or a `Vector` of `Tuple{Int,Int}` values.
+    Duplicate and out-of-range input-output pairs will be ignored,
+  * `freqs::Symbol = :rads`: unit of frequencies, *i.e.*, `:rads` for rad/sec,
+    `:Hz` for Herz,
+  * `magnitude::Symbol = :dB`: unit of the magnitude plot, *i.e.*, `:dB` for
+    decibels, `:abs` for absolute values, and,
+  * `phase::Symbol = :deg`: unit of phase shift, *i.e.*, `:deg` for degrees,
+    `:rad` for radians.
 
-  # Maybe we get NTuple and/or some higher dimentional Array for rows and cols
-  nrows = length(rows)
-  ncols = length(cols)
+**See also:** `freqresp`, `nyquist`.
+"""
+_bode{T<:Real}(sys::LtiSystem{Val{:siso}}, ω::AbstractVector{T})  =
+  reshape(freqresp(sys, ω), size(sys)..., length(ω))
+_bode{T<:Real}(sys::LtiSystem{Val{:mimo}}, ω::AbstractVector{T})  =
+  freqresp(sys, ω)
 
-  # Create labels
-  labels      =   ["\$G_{$(row),$(col)}\$" for row in rows, col in cols] |>
-                    vec |> x->reshape(x, 1, length(x))
+function bode{T}(sys::LtiSystem, ω::AbstractVector{T})
+  # TODO: should we check for ω ≥ 0 ?
+  fr = _bode(sys, ω)
+  BodeResponse(ω, abs(fr), unwrap!(angle(fr)))
+end
+
+@recipe function f(br::BodeResponse; iopairs = Tuple{Int,Int}[], freqs = :rads,
+  magnitude = :dB, phase = :deg)
+  if !isa(iopairs, Vector{Tuple{Int,Int}}) && !isa(iopairs, Tuple{Int,Int})
+    warn("plot(br, <keyword arguments>): `iopairs` must be a `Tuple` or a `Vector{Tuple}`")
+    throw(DomainError())
+  elseif !isa(freqs, Symbol) && freqs ∉ [:rads, :Hz]
+    warn("plot(br, <keyword arguments>): `freqs` can be either `:rads` or `:Hz`")
+    throw(DomainError())
+  elseif !isa(magnitude, Symbol) && magnitude ∉ [:dB, :abs]
+    warn("plot(br, <keyword arguments>): `magnitude` can be either `:dB` or `:abs`")
+    throw(DomainError())
+  elseif !isa(phase, Symbol) && phase ∉ [:deg, :rad]
+    warn("plot(br, <keyword arguments>): `phase` can be either `:deg` or `:rad`")
+    throw(DomainError())
+  end
+
+  iopairs = (iopairs == Tuple{Int,Int}) ? [iopairs] : iopairs
+
+  iomap   = Dict{Int,Set{Int}}()
+  ny, nu  = size(br.mag,1,2)
+
+  for pair in iopairs
+    outidx, inidx = pair
+    if 1 ≤ outidx ≤ ny && 1 ≤ inidx ≤ nu
+      iomap[outidx] = push!(get!(iomap, outidx, Set{Int}()), inidx)
+    else
+      warn("plot(br, <keyword arguments>): $(pair) out of range. Discarding...")
+    end
+  end
+
+  if isempty(iomap)
+    for outidx = 1:ny
+      iomap[outidx] = Set(1:nu)
+    end
+  end
+
+  sortedmap = sort!([(key,[val for val in set]) for (key,set) in iomap],
+                    lt = (l,r)->(l[1]≤r[1]))
+  for pair in sortedmap
+    sort!(pair[2])
+  end
 
   # Define plotting rules
-  layout      :=  (2,1)
-  link        :=  :x
-
-  plot_title  --> "Bode Plot"
+  layout      --> (2,1)
+  link        --> :x
+  xscale      --> :log10
+  xlabel      --> ifelse(freqs == :rads, "Frequency, \$\\omega\$ (rad/sec)",
+                        "Frequency, \$f\$ (Hz)")
   legend      --> :topright
   grid        --> true
 
-  @series begin
-    subplot   :=  1
-    title     --> "Magnitude Response"
-    label     --> labels
+  plottedfreqs = freqs == :rads ? br.freqs : 0.5*br.freqs/π
 
-    xlabel    --> "\$\\omega\$ (rad/sec)"
-    xscale    --> :log10
-    ylabel    --> "\$\\vert G \\vert\$ (dB)"
-
-    b.freqs, 20*log10(reshape(b.mag[rows, cols, :], nrows*ncols, length(b.freqs))')
-  end
-
-  @series begin
-    subplot   :=  2
-    title     --> "Phase Response"
-    label     --> labels
-
-    xlabel    --> "\$\\omega\$ (rad/sec)"
-    xscale    --> :log10
-    ylabel    --> "\$\\angle G\$ (deg)"
-
-    b.freqs, 180/π*(reshape(b.phase[rows, cols, :], nrows*ncols, length(b.freqs))')
+  for pair in sortedmap
+    outidx = pair[1]
+    for inidx in pair[2]
+      @series begin
+        ylabel  --> ifelse(magnitude == :dB, "Magnitude (dB)", "Magnitude (\$\\vert G \\vert\$)")
+        label   --> "\$G_{$(outidx),$(inidx)}\$"
+        plottedmag = (magnitude == :dB) ? 20*log10(vec(br.mag[outidx, inidx, :])) :
+                                          vec(br.mag[outidx, inidx, :])
+        plottedfreqs, plottedmag
+      end
+      @series begin
+        ylabel  --> ifelse(phase == :deg, "Phase (deg)", "Phase (rad)")
+        label   --> "\$G_{$(outidx),$(inidx)}\$"
+        plottedphase = (phase == :deg) ? 180/π*vec(br.phase[outidx, inidx, :]) :
+                                         vec(br.phase[outidx, inidx, :])
+        plottedfreqs, plottedphase
+      end
+    end
   end
 end
-
-# TODO: Think of how to (elegantly) introduce flexibility in defining some of the
-#       preferences:
-#       -  Magnitude in (-)'s,
-#       -  Phase in rad's,
-#       -  Frequency in Hz,
-#       -  etc.
-
-# TODO: Implement some file I/O functionality such as writedlm, readdlm, etc.

@@ -42,6 +42,7 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
   end
 
   # Function calls
+  ## Time response
   function (sys::StateSpace)(t::Real, x::AbstractVector, dx::AbstractVector, u)
     A, B, C, D = sys.A, sys.B, sys.C, sys.D
     ucalc = u(t, x)
@@ -63,6 +64,23 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
     x.u   = ucalc
     x.y   = C*x.x + D*x.u
     dx[:] = A*x.x + B*x.u
+  end
+
+  ## Frequency response
+  (sys::StateSpace{Val{:siso}})(x::Number)                                    =
+    _eval(sys, x)[1]
+  (sys::StateSpace{Val{:siso}}){M<:Number}(X::AbstractArray{M})               =
+    reshape(_eval(sys, X), size(X))
+  (sys::StateSpace{Val{:mimo}})(x::Number)                                    =
+    _eval(sys, x)
+  (sys::StateSpace{Val{:mimo}}){M<:Number}(X::AbstractArray{M})               =
+    _eval(sys, X)
+  function (sys::StateSpace){T<:Real}(; ω::Union{T, AbstractArray{T}} = Float64[])
+    if isempty(ω)
+      warn("sys(): Provide an argument for the function call. Refer to `?freqresp`.")
+      throw(DomainError())
+    end
+    freqresp(sys, ω)
   end
 end
 

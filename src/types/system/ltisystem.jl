@@ -120,22 +120,12 @@ function zpkdata(s::LtiSystem)
   throw(MethodError(zpkdata, Tuple{typeof(s)}))
 end
 
-function numvec(s::LtiSystem)
-  warn("numvec(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(numvec, Tuple{typeof(s)}))
-end
-
-function denvec(s::LtiSystem)
-  warn("denvec(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(denvec, Tuple{typeof(s)}))
-end
-
-function numpoly(s::LtiSystem)
+function num(s::LtiSystem)
   warn("numpoly(s) not implemented for s::$(typeof(s))")
   throw(MethodError(numpoly, Tuple{typeof(s)}))
 end
 
-function denpoly(s::LtiSystem)
+function den(s::LtiSystem)
   warn("denpoly(s) not implemented for s::$(typeof(s))")
   throw(MethodError(denpoly, Tuple{typeof(s)}))
 end
@@ -201,9 +191,4 @@ end
 function freqresp(s::LtiSystem, ω)
   warn("freqresp(s, ω) not implemented for (s::$(typeof(s1)), ω::$(typeof(ω)))")
   throw(MethodError(freqresp, Tuple{typeof(s),typeof(ω)}))
-end
-
-function evalfr(s::LtiSystem, ω)
-  warn("evalfr(s, ω) not implemented for (s::$(typeof(s1)), ω::$(typeof(ω)))")
-  throw(MethodError(evalfr, Tuple{typeof(s),typeof(ω)}))
 end

@@ -186,8 +186,6 @@ numinputs(s::MFD)               = s.nu
 numoutputs(s::MFD)              = s.ny
 
 # Dimension information
-ndims(s::MFD{Val{:siso}})       = 1
-ndims(s::MFD{Val{:mimo}})       = 2
 size(s::MFD)                    = size(s.N)
 size(s::MFD, d)                 = size(s.N, d)
 length(s::MFD{Val{:mimo}})      = length(s.N)
