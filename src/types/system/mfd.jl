@@ -175,8 +175,8 @@ samplingtime(s::MFD)              = s.Ts
 islfd{T,S,L}(s::MFD{T,S,Val{L}})  = false
 islfd{T,S}(s::MFD{T,S,Val{:lfd}}) = true
 isrfd{T,S,L}(s::MFD{T,S,Val{L}})  = !islfd(s)
-num(s::MFD)                       = s.N
-den(s::MFD)                       = s.D
+#num(s::MFD)                       = s.N
+#den(s::MFD)                       = s.D
 
 # Think carefully about how to implement numstates
 numstates(s::MFD)               = degree(s.D)*length(s) #  /TODO what is the appropriate one?
@@ -260,7 +260,7 @@ convert(::Type{MFD{Val{:mimo},Val{:cont},Val{:rfd}}}, g::AbstractMatrix)  =
 convert(::Type{MFD{Val{:mimo},Val{:disc},Val{:rfd}}}, g::AbstractMatrix)  =
   rfd(PolyMatrix(g, Val{:z}), PolyMatrix(eye(eltype(g), size(g,2), size(g,2))), zero(Float64))
 
-# conversions betwwen lfd and rfd
+# conversions between lfd and rfd
 convert{S,T,L}(::Type{RationalTF{Val{S},Val{T},Val{:lfd}}},
   s::MFD{Val{S},Val{T},Val{L}}) = lfd(s)
 convert{S,T,L}(::Type{RationalTF{Val{S},Val{T},Val{:rfd}}},

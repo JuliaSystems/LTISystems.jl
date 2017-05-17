@@ -5,8 +5,7 @@
 # NOTE: Base this function on the SLICOT routine TC04AD.
 # NOTE: Is it necessary to make a SISO version of this function?
 function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:rfd},M1,M2})
-
-  Den, Num  = colred(mfd.D,mfd.N)
+  Den, Num  = colred(mfd.D, mfd.N)
   kden, Phc = high_col_deg_matrix(Den)
   knum      = col_degree(Num)
 
@@ -23,10 +22,10 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:rfd},M1,M2})
   ny = mfd.ny
 
   # Initialize state space matrices
-  A = zeros(n,n)
-  B = zeros(n,nu)
-  C = zeros(ny,n)
-  D = zeros(ny,nu)
+  A = zeros(n, n)
+  B = zeros(n, nu)
+  C = zeros(ny, n)
+  D = zeros(ny, nu)
 
   # Construction of the A and B matrices
   start_i = 0
@@ -84,7 +83,6 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:rfd},M1,M2})
 end
 
 function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:lfd},M1,M2})
-
   Den, Num  = rowred(mfd.D,mfd.N)
   kden, Phr = high_row_deg_matrix(Den)
   knum      = row_degree(Num)
@@ -102,10 +100,10 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:lfd},M1,M2})
   ny = mfd.ny
 
   # Initialize state space matrices
-  A = zeros(n,n)
-  B = zeros(n,nu)
-  C = zeros(ny,n)
-  D = zeros(ny,nu)
+  A = zeros(n,  n )
+  B = zeros(n,  nu)
+  C = zeros(ny, n )
+  D = zeros(ny, nu)
 
   # Construction of the A and C matrices
   start_i = 0
@@ -126,9 +124,9 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:lfd},M1,M2})
         A[start_j+l+1,start_i + kden[i]] = -Den.coeffs[l][j,i]
       end
 
-      # Add entries of 1's to B
-      for l = 1:nu
-        C[l,start_i + kden[i]] = Phri[l,i]
+      # Add entries of 1's to C
+      for l = 1:ny
+        C[l, start_i + kden[i]] = Phri[l,i]
       end
 
       start_j += kden[j]
@@ -137,7 +135,7 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:lfd},M1,M2})
   end
 
   # Construction of the B and D matrices
-  for i = 1:ny
+  for i = 1:nu
 
     start_j = 0
     for j = 1:nu
@@ -161,5 +159,8 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:lfd},M1,M2})
 
   return A, B, C, D
 end
-ss(mfd::MFD{Val{:mimo},Val{:cont}}) = ss(_mfd2ss(mfd)...)
-ss(mfd::MFD{Val{:mimo},Val{:disc}}) = ss(_mfd2ss(mfd)...,mfd.Ts)
+
+ss(mfd::MFD{Val{:mimo},Val{:cont}}) = minreal(ss(_mfd2ss(mfd)...))
+ss(mfd::MFD{Val{:mimo},Val{:disc}}) = minreal(ss(_mfd2ss(mfd)..., mfd.Ts))
+
+ss(mfd::MFD{Val{:siso}})            = ss(tf(mfd))

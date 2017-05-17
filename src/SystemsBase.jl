@@ -93,7 +93,11 @@ include("types/system/mfd.jl")
 
 # Conversions
 include("conversions/mfd2ss.jl")
+include("conversions/mfd2tf.jl")
 include("conversions/ss2mfd.jl")
+#include("conversions/ss2tf.jl")
+include("conversions/tf2mfd.jl")
+include("conversions/tf2ss.jl")
 
 # Response types
 include("types/response/systemresponse.jl")
