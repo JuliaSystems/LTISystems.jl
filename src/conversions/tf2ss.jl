@@ -8,8 +8,8 @@ ss(s::RationalTF{Val{:siso},Val{:disc}}) = minreal(ss(_tf2ss(s)..., s.Ts))
 # TODO num(s) instead of num(s.mat[1])
 # TODO assumes proper tf
 function _tf2ss(s::RationalTF{Val{:siso}})
-  nump  = num(s.mat[1])
-  denp  = den(s.mat[1])
+  nump  = RationalFunctions.num(s.mat[1])
+  denp  = RationalFunctions.den(s.mat[1])
   nump /= denp[end]
   denp /= denp[end]
   m     = degree(nump)
