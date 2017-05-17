@@ -121,8 +121,8 @@ function zpkdata(s::LtiSystem)
 end
 
 function num(s::LtiSystem)
-  warn("numpoly(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(numpoly, Tuple{typeof(s)}))
+  warn("num(s) not implemented for s::$(typeof(s))")
+  throw(MethodError(num, Tuple{typeof(s)}))
 end
 
 function den(s::LtiSystem)

@@ -27,6 +27,9 @@ import Base: convert, promote_rule
 # Import identities for overloading
 import Base: one, zero
 
+# Import num and den for overloading
+import Base: num, den
+
 # Import inv and zeros
 import Base: inv, zeros
 
@@ -79,7 +82,7 @@ export
   nyquist,
   parallel,
   pzmap,
-  reduce,
+  # reduce,
   rosenbrock,
   series,
   simulate,

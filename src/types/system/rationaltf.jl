@@ -184,6 +184,11 @@ samplingtime(s::RationalTF) = s.Ts
 numinputs(s::RationalTF)    = s.nu
 numoutputs(s::RationalTF)   = s.ny
 
+num(s::RationalTF{Val{:siso}})  = num(s.mat[1])
+num(s::RationalTF{Val{:mimo}})  = map(num, s.mat)
+den(s::RationalTF{Val{:siso}})  = den(s.mat[1])
+den(s::RationalTF{Val{:mimo}})  = map(den, s.mat)
+
 # Iteration interface
 start(s::RationalTF{Val{:mimo}})        = start(s.mat)
 next(s::RationalTF{Val{:mimo}}, state)  = (s[state], state+1)
