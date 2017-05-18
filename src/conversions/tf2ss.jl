@@ -14,13 +14,21 @@ function _tf2ss(s::RationalTF{Val{:siso}})
   denp /= denp[end]
   m     = degree(nump)
   n     = degree(denp)
-  A     = diagm(ones(eltype(nump), n-1), 1)
-  B     = zeros(eltype(nump), n, 1)
-  C     = zeros(eltype(nump), 1, n)
 
-  A[end,:] = -coeffs(denp)[1:end-1]
-  B[end]   = one(eltype(nump))
-  C[1:m+1] = coeffs(nump)
-  D        = 0
+  a     = coeffs(denp)
+  b     = zeros(a)
+
+  b[end-m:end] = coeffs(nump) # nump might be of lower order than denp
+
+  A     = diagm(ones(eltype(b), n-1), 1)
+  B     = zeros(eltype(b), n, 1)
+  C     = zeros(eltype(b), 1, n)
+
+  A[end,:]  = -a[1:end-1]
+  B[end]    = one(eltype(b))
+  tmp       = b - a.*reverse(b)
+  C[:]      = tmp[1:end-1]
+  D         = 0
+
   A, B, C, D
 end
