@@ -4,13 +4,13 @@
 # realization (Kailath, 1980, Section 6.4.1).
 # NOTE: Base this function on the SLICOT routine TC04AD.
 # NOTE: Is it necessary to make a SISO version of this function?
-function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:rfd},M1,M2})
+function _mfd2ss{S,M1,M2}(mfd::MatrixFractionDescription{Val{:mimo},S,Val{:rfd},M1,M2})
   Den, Num  = colred(mfd.D, mfd.N)
   kden, Phc = high_col_deg_matrix(Den)
   knum      = col_degree(Num)
 
-  # Check for properness of the MFD (Kailath, 1980, Theorem 6.3-12)
-  all(knum .≤ kden) || error("mfd2ss: MFD is not proper")
+  # Check for properness of the MatrixFractionDescription (Kailath, 1980, Theorem 6.3-12)
+  all(knum .≤ kden) || error("mfd2ss: MatrixFractionDescription is not proper")
 
   # Normalize the coefficient matrices of Den
   Phci = inv(Phc)
@@ -82,13 +82,13 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:rfd},M1,M2})
   return A, B, C, D
 end
 
-function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:lfd},M1,M2})
+function _mfd2ss{S,M1,M2}(mfd::MatrixFractionDescription{Val{:mimo},S,Val{:lfd},M1,M2})
   Den, Num  = rowred(mfd.D,mfd.N)
   kden, Phr = high_row_deg_matrix(Den)
   knum      = row_degree(Num)
 
-  # Check for properness of the MFD (Kailath, 1980, Theorem 6.3-12)
-  all(knum .≤ kden) || error("mfd2ss: MFD is not proper")
+  # Check for properness of the MatrixFractionDescription (Kailath, 1980, Theorem 6.3-12)
+  all(knum .≤ kden) || error("mfd2ss: MatrixFractionDescription is not proper")
 
   # Normalize the coefficient matrices of Den
   Phri = inv(Phr)
@@ -160,7 +160,7 @@ function _mfd2ss{S,M1,M2}(mfd::MFD{Val{:mimo},S,Val{:lfd},M1,M2})
   return A, B, C, D
 end
 
-ss(mfd::MFD{Val{:mimo},Val{:cont}}) = minreal(ss(_mfd2ss(mfd)...))
-ss(mfd::MFD{Val{:mimo},Val{:disc}}) = minreal(ss(_mfd2ss(mfd)..., mfd.Ts))
+ss(mfd::MatrixFractionDescription{Val{:mimo},Val{:cont}}) = minreal(ss(_mfd2ss(mfd)...))
+ss(mfd::MatrixFractionDescription{Val{:mimo},Val{:disc}}) = minreal(ss(_mfd2ss(mfd)..., mfd.Ts))
 
-ss(mfd::MFD{Val{:siso}})            = ss(tf(mfd))
+ss(mfd::MatrixFractionDescription{Val{:siso}})            = ss(tf(mfd))

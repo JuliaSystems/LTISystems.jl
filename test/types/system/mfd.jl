@@ -1,8 +1,8 @@
-## MFDs
+## MatrixFractionDescriptions
 using Polynomials
 using PolynomialMatrices
 
-# Defining left MFDs
+# Defining left MatrixFractionDescriptions
 s = Poly([0, 1],:s)
 N = PolyMatrix([s; -s])
 D = PolyMatrix([0 -(s^3+4*s^2+5*s+2); (s+2)^2 s+2])
@@ -19,7 +19,7 @@ M = rfd(N,D)
 @test !is_col_proper(M.D)
 @test isproper(M)
 
-# Defining right MFDs
+# Defining right MatrixFractionDescriptions
 N = PolyMatrix([s -s])
 D = PolyMatrix([zero(s) -(s^3+4*s^2+5*s+2); (s+2)^2 s+2])
 M = rfd(N,D)
@@ -39,7 +39,7 @@ lmfd = lfd(Nₗ, Dₗ)
 @test isapprox(rfd(lfd(rmfd)), rmfd)
 
 # INCOMPLETE
-# Conversion from SS to MFD
+# Conversion from SS to MatrixFractionDescription
 A = [-4 -4 0 -1 -2; 1 0 0 0 0; 0 0 -4 -5 -2; 0 0 1 0 0; 0 0 0 1 0]'
 B = [1 0 0 0 0; -1 0 1 0 0]'
 C = [0 1; 0 0; -1 0; 0 0; 0 0]'

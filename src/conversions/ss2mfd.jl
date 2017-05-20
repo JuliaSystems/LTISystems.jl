@@ -1,4 +1,4 @@
-# Generates a right MFD whose transfer function coincides with that
+# Generates a right MatrixFractionDescription whose transfer function coincides with that
 # of an observable state-space model.
 function _ss2rfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
   n     = numstates(sys)
@@ -9,7 +9,7 @@ function _ss2rfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
   Dₗ    = PolyMatrix(vcat(sys.A, -eye(sys.A)), (n,n), Val{_pmvaltype(sys)})
   Nₗ    = PolyMatrix(sys.B, (n,nu), Val{_pmvaltype(sys)})
 
-  # Write (sI-A)^{-1} B as a left MFD and convert to right MFD
+  # Write (sI-A)^{-1} B as a left MatrixFractionDescription and convert to right MatrixFractionDescription
   L, U = ltriang(hcat(-Dₗ,Nₗ))
 
   # NOTE: Missing to check if P2[ny,:] is non-zero (this is equivalent to controllability)
@@ -20,7 +20,7 @@ function _ss2rfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
   Nr = U[1:n,n+1:end]
   Dr = U[n+1:end,n+1:end]
 
-  # Include C and D in the final right MFD
+  # Include C and D in the final right MatrixFractionDescription
   return sys.D*Dr - sys.C*Nr, Dr
 end
 
@@ -41,7 +41,7 @@ function _ss2lfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
   # Construct system matrix (Rosenbrock, 1970)
   Dᵣ    = PolyMatrix(vcat(-sys.A, eye(sys.A)), (n,n), Val{_pmvaltype(sys)})
   Nᵣ    = PolyMatrix(sys.C, (ny,n), Val{_pmvaltype(sys)})
-  # Write C(sI-A)^{-1} as a right MFD and convert to left MFD
+  # Write C(sI-A)^{-1} as a right MatrixFractionDescription and convert to left MatrixFractionDescription
   R,U   = rtriang(vcat(-Dᵣ, Nᵣ))
 
   # NOTE: Missing to check if R[ny,:] is non-zero (this is equivalent to controllability)
@@ -51,7 +51,7 @@ function _ss2lfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
   Nₗ = U[n+1:end,1:n]
   Dₗ = U[n+1:end,n+1:end]
 
-  # Include B and D in the final right MFD
+  # Include B and D in the final right MatrixFractionDescription
   return Dₗ*sys.D - Nₗ*sys.B, Dₗ
 end
 

@@ -35,13 +35,13 @@ feedback{T1<:LtiSystem, T2<:Real}(n::Matrix{T2}, s1::T1) =
 # # TODO: Implement the specific cases for speedup purposes. Take into account the
 # #       new type-system
 # # Be smart in specific cases [30x speedup]
-# function feedback{T1<:RationalTF{T,S,U,V},T2<:RationalTF}(s1::T1, s2::T2)
+# function feedback{T1<:TransferFunction{T,S,U,V},T2<:TransferFunction}(s1::T1, s2::T2)
 #   n = num(s1)*den(s2)
 #   d = den(s1)*den(s2) + num(s1)*num(s2)
 #   tf(n,d,samplingtime(s1))
 # end
 #
-# function feedback{T1<:RationalTF,T2<:RationalTF}(s1::T1, s2::T2)
+# function feedback{T1<:TransferFunction,T2<:TransferFunction}(s1::T1, s2::T2)
 #   n = num(s1)*den(s2)
 #   d = den(s1)*den(s2) + num(s1)*num(s2)
 #   tf(n,d)

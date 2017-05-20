@@ -1,5 +1,5 @@
-info("Starting tests for `RationalTF`...")
+info("Starting tests for `TransferFunction`...")
 
 @test 1 == 1
 
-info("Tests for `RationalTF` finished.")
+info("Tests for `TransferFunction` finished.")

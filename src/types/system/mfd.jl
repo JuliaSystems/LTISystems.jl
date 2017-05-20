@@ -10,29 +10,29 @@
 #   ny: Number of outputs
 #   Ts: Sampling time (= zero(Float64) for continuous-time systems)
 #
-# NOTE: Should SISO MFDs be based on 1x1 polynomial matrices (similarly to `RationalTF`)?
-# NOTE: Should the constructors verify that D is nonsingular and that the MFD is proper?
-immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
+# NOTE: Should SISO MatrixFractionDescriptions be based on 1x1 polynomial matrices (similarly to `TransferFunction`)?
+# NOTE: Should the constructors verify that D is nonsingular and that the MatrixFractionDescription is proper?
+immutable MatrixFractionDescription{T,S,L,M1,M2}  <: LtiSystem{T,S}
   N::M1
   D::M2
   nu::Int
   ny::Int
   Ts::Float64
 
-  # Continuous-time, single-input-single-output MFD model
-  function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, ::Type{Val{L}})
+  # Continuous-time, single-input-single-output MatrixFractionDescription model
+  function (::Type{MatrixFractionDescription}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, ::Type{Val{L}})
     mfdcheck(N,D)
     new{Val{:siso},Val{:cont},Val{L},M1,M2}(N, D, 1, 1, zero(Float64))
   end
 
-  # Discrete-time, single-input-single-output MFD model
-  function (::Type{MFD}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
+  # Discrete-time, single-input-single-output MatrixFractionDescription model
+  function (::Type{MatrixFractionDescription}){L,M1<:Polynomials.Poly,M2<:Polynomials.Poly}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
     mfdcheck(N,D,Ts)
     new{Val{:siso},Val{:disc},Val{L},M1,M2}(N, D, 1, 1, convert(Float64, Ts))
   end
 
-  # Continuous-time, multi-input-multi-output MFD model
-  function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
+  # Continuous-time, multi-input-multi-output MatrixFractionDescription model
+  function (::Type{MatrixFractionDescription}){L,M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, ::Type{Val{L}})
     ny, nu = mfdcheck(N, D, Val{L})
     _N = PolyMatrix(coeffs(N), size(N), Val{:s})
@@ -42,8 +42,8 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
     # should we do better checks than just converting the variable to the correct one?
   end
 
-  # Discrete-time, multi-input-multi-output MFD model
-  function (::Type{MFD}){L,M1<:PolynomialMatrices.PolyMatrix,
+  # Discrete-time, multi-input-multi-output MatrixFractionDescription model
+  function (::Type{MatrixFractionDescription}){L,M1<:PolynomialMatrices.PolyMatrix,
     M2<:PolynomialMatrices.PolyMatrix}(N::M1, D::M2, Ts::Real, ::Type{Val{L}})
     ny, nu = mfdcheck(N, D, Val{L}, Ts)
     _N = PolyMatrix(coeffs(N), size(N), Val{:z})
@@ -55,12 +55,12 @@ immutable MFD{T,S,L,M1,M2}  <: LtiSystem{T,S}
 end
 
 function mfdcheck{T<:Real,S<:Real}(N::Poly{T}, D::Poly{S}, Ts::Real = zero(Float64))
-  @assert Ts ≥ zero(Ts) && !isinf(Ts) "MFD: Ts must be non-negative real number"
+  @assert Ts ≥ zero(Ts) && !isinf(Ts) "MatrixFractionDescription: Ts must be non-negative real number"
 end
 
-isproper(s::MFD{Val{:siso}})  = degree(s.D) ≥ degree(s.N)
+isproper(s::MatrixFractionDescription{Val{:siso}})  = degree(s.D) ≥ degree(s.N)
 
-function isproper{S}(s::MFD{Val{:mimo},Val{S},Val{:rfd}})
+function isproper{S}(s::MatrixFractionDescription{Val{:mimo},Val{S},Val{:rfd}})
   if is_col_proper(s.D)
     return all(col_degree(s.D) .>= col_degree(s.N))
   else
@@ -68,7 +68,7 @@ function isproper{S}(s::MFD{Val{:mimo},Val{S},Val{:rfd}})
   end
 end
 
-function isproper{S}(s::MFD{Val{:mimo},Val{S},Val{:lfd}})
+function isproper{S}(s::MatrixFractionDescription{Val{:mimo},Val{S},Val{:lfd}})
   if is_row_proper(s.D)
     return all(row_degree(s.D) .>= row_degree(s.N))
   else
@@ -76,9 +76,9 @@ function isproper{S}(s::MFD{Val{:mimo},Val{S},Val{:lfd}})
   end
 end
 
-isstrictlyproper(s::MFD{Val{:siso}}) = degree(s.D) > degree(s.N)
+isstrictlyproper(s::MatrixFractionDescription{Val{:siso}}) = degree(s.D) > degree(s.N)
 
-function isstrictlyproper{S}(s::MFD{Val{:mimo},Val{S},Val{:rfd}})
+function isstrictlyproper{S}(s::MatrixFractionDescription{Val{:mimo},Val{S},Val{:rfd}})
   if is_col_proper(s.D)
     return all(col_degree(s.D) .>= col_degree(s.N))
   else
@@ -86,7 +86,7 @@ function isstrictlyproper{S}(s::MFD{Val{:mimo},Val{S},Val{:rfd}})
   end
 end
 
-function isstrictlyproper{S}(s::MFD{Val{:mimo},Val{S},Val{:lfd}})
+function isstrictlyproper{S}(s::MatrixFractionDescription{Val{:mimo},Val{S},Val{:lfd}})
   if is_row_proper(s.D)
     return all(row_degree(s.D) .>= row_degree(s.N))
   else
@@ -97,36 +97,36 @@ end
 # Enforce rational transfer function type invariance
 function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
   N::M1, D::M2, ::Type{Val{:lfd}})
-  @assert size(N,1) == size(D,1) "MFD: size(N,1) ≠ size(D,1)"
-  @assert size(D,1) == size(D,2) "MFD: size(D,1) ≠ size(D,2)"
+  @assert size(N,1) == size(D,1) "MatrixFractionDescription: size(N,1) ≠ size(D,1)"
+  @assert size(D,1) == size(D,2) "MatrixFractionDescription: size(D,1) ≠ size(D,2)"
 
   return size(N,1), size(N,2)
 end
 function mfdcheck{M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
   N::M1, D::M2, ::Type{Val{:rfd}})
-  @assert size(N,2) == size(D,2) "MFD: size(N,2) ≠ size(D,2)"
-  @assert size(D,1) == size(D,2) "MFD: size(D,1) ≠ size(D,2)"
+  @assert size(N,2) == size(D,2) "MatrixFractionDescription: size(N,2) ≠ size(D,2)"
+  @assert size(D,1) == size(D,2) "MatrixFractionDescription: size(D,1) ≠ size(D,2)"
 
   return size(N,1), size(N,2)
 end
 function mfdcheck{T,M1<:PolynomialMatrices.PolyMatrix,M2<:PolynomialMatrices.PolyMatrix}(
   N::M1, D::M2, ::Type{Val{T}}, Ts::Real)
-  @assert Ts ≥ zero(Ts) && !isinf(Ts) "MFD: Ts must be non-negative real number"
+  @assert Ts ≥ zero(Ts) && !isinf(Ts) "MatrixFractionDescription: Ts must be non-negative real number"
   return mfdcheck(N, D, Val{T})
 end
 
 # Outer constructors
-lfd(N::Poly, D::Poly)           = MFD(N, D, Val{:lfd})
-lfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), Val{:lfd})
+lfd(N::Poly, D::Poly)           = MatrixFractionDescription(N, D, Val{:lfd})
+lfd(N::Poly, D::Poly, Ts::Real) = MatrixFractionDescription(N, D, convert(Float64, Ts), Val{:lfd})
 lfd{M1<:PolyMatrix,M2<:PolyMatrix}(N::M1, D::M2) =
-  MFD(N, D, Val{:lfd})
+  MatrixFractionDescription(N, D, Val{:lfd})
 lfd{M1<:PolyMatrix,M2<:PolyMatrix}(N::M1, D::M2, Ts::Real) =
-  MFD(N, D, convert(Float64, Ts), Val{:lfd})
+  MatrixFractionDescription(N, D, convert(Float64, Ts), Val{:lfd})
 
-rfd(N::Poly, D::Poly) = MFD(N, D, Val{:rfd})
-rfd(N::Poly, D::Poly, Ts::Real) = MFD(N, D, convert(Float64, Ts), Val{:rfd})
-rfd(N::PolyMatrix, D::PolyMatrix) = MFD(N, D, Val{:rfd})
-rfd(N::PolyMatrix, D::PolyMatrix, Ts::Real) = MFD(N, D, convert(Float64, Ts), Val{:rfd})
+rfd(N::Poly, D::Poly) = MatrixFractionDescription(N, D, Val{:rfd})
+rfd(N::Poly, D::Poly, Ts::Real) = MatrixFractionDescription(N, D, convert(Float64, Ts), Val{:rfd})
+rfd(N::PolyMatrix, D::PolyMatrix) = MatrixFractionDescription(N, D, Val{:rfd})
+rfd(N::PolyMatrix, D::PolyMatrix, Ts::Real) = MatrixFractionDescription(N, D, convert(Float64, Ts), Val{:rfd})
 
 # Vector constructors
 lfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2}) =
@@ -171,139 +171,139 @@ function rfd{T1<:Real, T2<:Real}(N::AbstractVector{T1}, D::AbstractVector{T2},
 end
 
 # Interfaces
-samplingtime(s::MFD)              = s.Ts
-islfd{T,S,L}(s::MFD{T,S,Val{L}})  = false
-islfd{T,S}(s::MFD{T,S,Val{:lfd}}) = true
-isrfd{T,S,L}(s::MFD{T,S,Val{L}})  = !islfd(s)
-#num(s::MFD)                       = s.N
-#den(s::MFD)                       = s.D
+samplingtime(s::MatrixFractionDescription)              = s.Ts
+islfd{T,S,L}(s::MatrixFractionDescription{T,S,Val{L}})  = false
+islfd{T,S}(s::MatrixFractionDescription{T,S,Val{:lfd}}) = true
+isrfd{T,S,L}(s::MatrixFractionDescription{T,S,Val{L}})  = !islfd(s)
+#num(s::MatrixFractionDescription)                       = s.N
+#den(s::MatrixFractionDescription)                       = s.D
 
 # Think carefully about how to implement numstates
-numstates(s::MFD)               = degree(s.D)*length(s) #  /TODO what is the appropriate one?
+numstates(s::MatrixFractionDescription)               = degree(s.D)*length(s) #  /TODO what is the appropriate one?
 # Currently, we only allow for proper systems
-numstates(s::MFD{Val{:siso}})   = degree(s.D)
-numinputs(s::MFD)               = s.nu
-numoutputs(s::MFD)              = s.ny
+numstates(s::MatrixFractionDescription{Val{:siso}})   = degree(s.D)
+numinputs(s::MatrixFractionDescription)               = s.nu
+numoutputs(s::MatrixFractionDescription)              = s.ny
 
 # Dimension information
-size(s::MFD)                    = size(s.N)
-size(s::MFD, d)                 = size(s.N, d)
-length(s::MFD{Val{:mimo}})      = length(s.N)
+size(s::MatrixFractionDescription)                    = size(s.N)
+size(s::MatrixFractionDescription, d)                 = size(s.N, d)
+length(s::MatrixFractionDescription{Val{:mimo}})      = length(s.N)
 
 # conversion between 1×1 mimo and siso
-function siso{L}(s::MFD{Val{:mimo},Val{:cont},Val{L}})
+function siso{L}(s::MatrixFractionDescription{Val{:mimo},Val{:cont},Val{L}})
   if size(s) != (1,1)
     warn("siso(s): system is not 1×1")
     throw(DomainError())
   end
-  MFD(s.N[1], s.D[1], Val{L})
+  MatrixFractionDescription(s.N[1], s.D[1], Val{L})
 end
 
-function siso{L}(s::MFD{Val{:mimo},Val{:disc},Val{L}})
+function siso{L}(s::MatrixFractionDescription{Val{:mimo},Val{:disc},Val{L}})
   if size(s) != (1,1)
     warn("siso(s): system is not 1×1")
     throw(DomainError())
   end
-  MFD(s.N[1], s.D[1], s.Ts, Val{L})
+  MatrixFractionDescription(s.N[1], s.D[1], s.Ts, Val{L})
 end
 
-function mimo{L}(s::MFD{Val{:siso},Val{:cont},Val{L}})
-  MFD(PolyMatrix(s.N, (1,1), Val{:s}) , PolyMatrix(s.D, (1,1), Val{:s}), Val{L})
+function mimo{L}(s::MatrixFractionDescription{Val{:siso},Val{:cont},Val{L}})
+  MatrixFractionDescription(PolyMatrix(s.N, (1,1), Val{:s}) , PolyMatrix(s.D, (1,1), Val{:s}), Val{L})
 end
 
-function mimo{L}(s::MFD{Val{:siso},Val{:disc},Val{L}})
-  MFD(PolyMatrix(s.N, (1,1), Val{:z}) , PolyMatrix(s.D, (1,1), Val{:z}), s.Ts, Val{L})
+function mimo{L}(s::MatrixFractionDescription{Val{:siso},Val{:disc},Val{L}})
+  MatrixFractionDescription(PolyMatrix(s.N, (1,1), Val{:z}) , PolyMatrix(s.D, (1,1), Val{:z}), s.Ts, Val{L})
 end
 
 ## Iteration interface
-start(s::MFD{Val{:mimo}})       = start(s.N)
-next(s::MFD{Val{:mimo}}, state) = (s[state], state+1)
-done(s::MFD{Val{:mimo}}, state) = done(s.N, state)
+start(s::MatrixFractionDescription{Val{:mimo}})       = start(s.N)
+next(s::MatrixFractionDescription{Val{:mimo}}, state) = (s[state], state+1)
+done(s::MatrixFractionDescription{Val{:mimo}}, state) = done(s.N, state)
 
-eltype{S,M1}(::Type{MFD{Val{:mimo},Val{S},M1}}) =
-  MFD{Val{:siso},Val{S},M1}
+eltype{S,M1}(::Type{MatrixFractionDescription{Val{:mimo},Val{S},M1}}) =
+  MatrixFractionDescription{Val{:siso},Val{S},M1}
 
 # Indexing of MIMO systems
-function getindex(s::MFD{Val{:mimo},Val{:cont},Val{:lfd}}, I...)
+function getindex(s::MatrixFractionDescription{Val{:mimo},Val{:cont},Val{:lfd}}, I...)
   @boundscheck checkbounds(s.N, I...)
   lfd(ss(s)[I...])
 end
 
-function getindex(s::MFD{Val{:mimo},Val{:cont},Val{:rfd}}, I...)
+function getindex(s::MatrixFractionDescription{Val{:mimo},Val{:cont},Val{:rfd}}, I...)
   @boundscheck checkbounds(s.N, I...)
   rfd(ss(s)[I...])
 end
 
-endof(s::MFD{Val{:mimo}})        = endof(s.N)
+endof(s::MatrixFractionDescription{Val{:mimo}})        = endof(s.N)
 
 # Conversion and promotion
-promote_rule{T<:Real,S,L}(::Type{T}, ::Type{MFD{Val{:siso},S,L}}) =
-  MFD{Val{:siso},S,L}
-promote_rule{T<:AbstractMatrix,S,L}(::Type{T}, ::Type{MFD{Val{:mimo},S,L}}) =
-  MFD{Val{:mimo},S,L}
+promote_rule{T<:Real,S,L}(::Type{T}, ::Type{MatrixFractionDescription{Val{:siso},S,L}}) =
+  MatrixFractionDescription{Val{:siso},S,L}
+promote_rule{T<:AbstractMatrix,S,L}(::Type{T}, ::Type{MatrixFractionDescription{Val{:mimo},S,L}}) =
+  MatrixFractionDescription{Val{:mimo},S,L}
 
-convert(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd}}}, g::Real)            =
+convert(::Type{MatrixFractionDescription{Val{:siso},Val{:cont},Val{:lfd}}}, g::Real)            =
   lfd(Poly(g,:s), Poly(one(g),:s))
-convert(::Type{MFD{Val{:siso},Val{:disc},Val{:lfd}}}, g::Real)            =
+convert(::Type{MatrixFractionDescription{Val{:siso},Val{:disc},Val{:lfd}}}, g::Real)            =
   lfd(Poly(g,:z), Poly(one(g),:z), zero(Float64))
-convert(::Type{MFD{Val{:mimo},Val{:cont},Val{:lfd}}}, g::AbstractMatrix)  =
+convert(::Type{MatrixFractionDescription{Val{:mimo},Val{:cont},Val{:lfd}}}, g::AbstractMatrix)  =
   lfd(PolyMatrix(g, Val{:s}), PolyMatrix(eye(eltype(g), size(g,1), size(g,1))))
-convert(::Type{MFD{Val{:mimo},Val{:disc},Val{:lfd}}}, g::AbstractMatrix)  =
+convert(::Type{MatrixFractionDescription{Val{:mimo},Val{:disc},Val{:lfd}}}, g::AbstractMatrix)  =
   lfd(PolyMatrix(g, Val{:z}), PolyMatrix(eye(eltype(g), size(g,1), size(g,1))), zero(Float64))
 
-convert(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd}}}, g::Real)            =
+convert(::Type{MatrixFractionDescription{Val{:siso},Val{:cont},Val{:rfd}}}, g::Real)            =
   rfd(Poly(g,:s), Poly(one(g),:s))
-convert(::Type{MFD{Val{:siso},Val{:disc},Val{:rfd}}}, g::Real)            =
+convert(::Type{MatrixFractionDescription{Val{:siso},Val{:disc},Val{:rfd}}}, g::Real)            =
   rfd(Poly(g,:z), Poly(one(g),:z), zero(Float64))
-convert(::Type{MFD{Val{:mimo},Val{:cont},Val{:rfd}}}, g::AbstractMatrix)  =
+convert(::Type{MatrixFractionDescription{Val{:mimo},Val{:cont},Val{:rfd}}}, g::AbstractMatrix)  =
   rfd(PolyMatrix(g, Val{:s}), PolyMatrix(eye(eltype(g), size(g,2), size(g,2))))
-convert(::Type{MFD{Val{:mimo},Val{:disc},Val{:rfd}}}, g::AbstractMatrix)  =
+convert(::Type{MatrixFractionDescription{Val{:mimo},Val{:disc},Val{:rfd}}}, g::AbstractMatrix)  =
   rfd(PolyMatrix(g, Val{:z}), PolyMatrix(eye(eltype(g), size(g,2), size(g,2))), zero(Float64))
 
 # conversions between lfd and rfd
-convert{S,T,L}(::Type{RationalTF{Val{S},Val{T},Val{:lfd}}},
-  s::MFD{Val{S},Val{T},Val{L}}) = lfd(s)
-convert{S,T,L}(::Type{RationalTF{Val{S},Val{T},Val{:rfd}}},
-  s::MFD{Val{S},Val{T},Val{L}}) = rfd(s)
+convert{S,T,L}(::Type{TransferFunction{Val{S},Val{T},Val{:lfd}}},
+  s::MatrixFractionDescription{Val{S},Val{T},Val{L}}) = lfd(s)
+convert{S,T,L}(::Type{TransferFunction{Val{S},Val{T},Val{:rfd}}},
+  s::MatrixFractionDescription{Val{S},Val{T},Val{L}}) = rfd(s)
 
 # Multiplicative and additive identities (meaningful only for SISO)
-one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}})  =
+one{M1,M2}(::Type{MatrixFractionDescription{Val{:siso},Val{:cont},Val{:lfd},M1,M2}})  =
   lfd(one(Int8))
-one{M1,M2}(::Type{MFD{Val{:siso},Val{:disc},Val{:lfd},M1,M2}})  =
+one{M1,M2}(::Type{MatrixFractionDescription{Val{:siso},Val{:disc},Val{:lfd},M1,M2}})  =
   lfd(one(Int8), zero(Float64))
-zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:lfd},M1,M2}}) =
+zero{M1,M2}(::Type{MatrixFractionDescription{Val{:siso},Val{:cont},Val{:lfd},M1,M2}}) =
   lfd(zero(Int8))
-zero{M1,M2}(::Type{MFD{Val{:siso},Val{:disc},Val{:lfd},M1,M2}}) =
+zero{M1,M2}(::Type{MatrixFractionDescription{Val{:siso},Val{:disc},Val{:lfd},M1,M2}}) =
   lfd(zero(Int8), zero(Float64))
 
-one{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}})  =
+one{M1,M2}(::Type{MatrixFractionDescription{Val{:siso},Val{:cont},Val{:rfd},M1,M2}})  =
   rfd(one(Int8))
-one{M1,M2}(::Type{MFD{Val{:siso},Val{:disc},Val{:rfd},M1,M2}})  =
+one{M1,M2}(::Type{MatrixFractionDescription{Val{:siso},Val{:disc},Val{:rfd},M1,M2}})  =
   rfd(one(Int8), zero(Float64))
-zero{M1,M2}(::Type{MFD{Val{:siso},Val{:cont},Val{:rfd},M1,M2}}) =
+zero{M1,M2}(::Type{MatrixFractionDescription{Val{:siso},Val{:cont},Val{:rfd},M1,M2}}) =
   rfd(zero(Int8))
-zero{M1,M2}(::Type{MFD{Val{:siso},Val{:disc},Val{:rfd},M1,M2}}) =
+zero{M1,M2}(::Type{MatrixFractionDescription{Val{:siso},Val{:disc},Val{:rfd},M1,M2}}) =
   tf(zero(Int8), zero(Float64))
 
-one{T,S,L,M1,M2}(s::MFD{Val{T},Val{S},Val{L},M1,M2})   =
+one{T,S,L,M1,M2}(s::MatrixFractionDescription{Val{T},Val{S},Val{L},M1,M2})   =
   one(typeof(s))
-zero{T,S,L,M1,M2}(s::MFD{Val{T},Val{S},Val{L},M1,M2})  =
+zero{T,S,L,M1,M2}(s::MatrixFractionDescription{Val{T},Val{S},Val{L},M1,M2})  =
   zero(typeof(s))
 
 # conversions between lfd and rfd
-lfd(s::MFD{Val{:siso},Val{:cont},Val{:rfd}}) = lfd(s.N,s.D)
-lfd(s::MFD{Val{:siso},Val{:disc},Val{:rfd}}) = lfd(s.N,s.D,s.Ts)
-lfd(s::MFD{Val{:mimo},Val{:cont},Val{:rfd}}) = lfd(_rfd2lfd(s)...)
-lfd(s::MFD{Val{:mimo},Val{:disc},Val{:rfd}}) = lfd(_rfd2lfd(s)...,s.Ts)
-lfd{T,S}(s::MFD{T,S,Val{:lfd}})              = s
+lfd(s::MatrixFractionDescription{Val{:siso},Val{:cont},Val{:rfd}}) = lfd(s.N,s.D)
+lfd(s::MatrixFractionDescription{Val{:siso},Val{:disc},Val{:rfd}}) = lfd(s.N,s.D,s.Ts)
+lfd(s::MatrixFractionDescription{Val{:mimo},Val{:cont},Val{:rfd}}) = lfd(_rfd2lfd(s)...)
+lfd(s::MatrixFractionDescription{Val{:mimo},Val{:disc},Val{:rfd}}) = lfd(_rfd2lfd(s)...,s.Ts)
+lfd{T,S}(s::MatrixFractionDescription{T,S,Val{:lfd}})              = s
 
-rfd(s::MFD{Val{:siso},Val{:cont},Val{:lfd}}) = rfd(s.N,s.D)
-rfd(s::MFD{Val{:siso},Val{:disc},Val{:lfd}}) = rfd(s.N,s.D,s.Ts)
-rfd(s::MFD{Val{:mimo},Val{:cont},Val{:lfd}}) = rfd(_lfd2rfd(s)...)
-rfd(s::MFD{Val{:mimo},Val{:disc},Val{:lfd}}) = rfd(_lfd2rfd(s)...,s.Ts)
-rfd{T,S}(s::MFD{T,S,Val{:rfd}})              = s
+rfd(s::MatrixFractionDescription{Val{:siso},Val{:cont},Val{:lfd}}) = rfd(s.N,s.D)
+rfd(s::MatrixFractionDescription{Val{:siso},Val{:disc},Val{:lfd}}) = rfd(s.N,s.D,s.Ts)
+rfd(s::MatrixFractionDescription{Val{:mimo},Val{:cont},Val{:lfd}}) = rfd(_lfd2rfd(s)...)
+rfd(s::MatrixFractionDescription{Val{:mimo},Val{:disc},Val{:lfd}}) = rfd(_lfd2rfd(s)...,s.Ts)
+rfd{T,S}(s::MatrixFractionDescription{T,S,Val{:rfd}})              = s
 
-function _lfd2rfd{T,S}(s::MFD{T,S,Val{:lfd}})
+function _lfd2rfd{T,S}(s::MatrixFractionDescription{T,S,Val{:lfd}})
   n,m = size(s)
   p   = hcat(-s.N, s.D)
   _,U = ltriang(p)
@@ -313,7 +313,7 @@ function _lfd2rfd{T,S}(s::MFD{T,S,Val{:lfd}})
   return N,D
 end
 
-function _rfd2lfd{T,S}(s::MFD{T,S,Val{:rfd}})
+function _rfd2lfd{T,S}(s::MatrixFractionDescription{T,S,Val{:rfd}})
   n,m = size(s)
   p   = vcat(-s.D, s.N)
   _,U = rtriang(p)
@@ -323,15 +323,15 @@ function _rfd2lfd{T,S}(s::MFD{T,S,Val{:rfd}})
   return N,D
 end
 
-function inv{M<:MFD}(s::M)
+function inv{M<:MatrixFractionDescription}(s::M)
   _mfdinvcheck(s)
   _inv(s)
 end
 
-_inv{T,L}(s::MFD{Val{T},Val{:cont},Val{L}}) = MFD(copy(s.D), copy(s.N), Val{L})
-_inv{T,L}(s::MFD{Val{T},Val{:disc},Val{L}}) = MFD(copy(s.D), copy(s.N), s.Ts, Val{L})
+_inv{T,L}(s::MatrixFractionDescription{Val{T},Val{:cont},Val{L}}) = MatrixFractionDescription(copy(s.D), copy(s.N), Val{L})
+_inv{T,L}(s::MatrixFractionDescription{Val{T},Val{:disc},Val{L}}) = MatrixFractionDescription(copy(s.D), copy(s.N), s.Ts, Val{L})
 
-function _mfdinvcheck(s::MFD)
+function _mfdinvcheck(s::MatrixFractionDescription)
   if s.ny ≠ s.nu
     warn("inv(sys): s.ny ≠ s.nu")
     throw(DomainError())
@@ -344,14 +344,14 @@ function _mfdinvcheck(s::MFD)
 end
 
 # Negative of a transfer-function model
--{T}(s::MFD{Val{T},Val{:cont},Val{:lfd}}) = lfd(-s.N, copy(s.D))
--{T}(s::MFD{Val{T},Val{:disc},Val{:lfd}}) = lfd(-s.N, copy(s.D), s.Ts)
--{T}(s::MFD{Val{T},Val{:cont},Val{:rfd}}) = rfd(-s.N, copy(s.D))
--{T}(s::MFD{Val{T},Val{:disc},Val{:rfd}}) = rfd(-s.N, copy(s.D), s.Ts)
+-{T}(s::MatrixFractionDescription{Val{T},Val{:cont},Val{:lfd}}) = lfd(-s.N, copy(s.D))
+-{T}(s::MatrixFractionDescription{Val{T},Val{:disc},Val{:lfd}}) = lfd(-s.N, copy(s.D), s.Ts)
+-{T}(s::MatrixFractionDescription{Val{T},Val{:cont},Val{:rfd}}) = rfd(-s.N, copy(s.D))
+-{T}(s::MatrixFractionDescription{Val{T},Val{:disc},Val{:rfd}}) = rfd(-s.N, copy(s.D), s.Ts)
 
 # Addition (parallel)
-function _mfdparallelcheck{T1,T2,S,L}(s1::MFD{Val{T1},Val{S},Val{L}},
-  s2::MFD{Val{T2},Val{S},Val{L}})
+function _mfdparallelcheck{T1,T2,S,L}(s1::MatrixFractionDescription{Val{T1},Val{S},Val{L}},
+  s2::MatrixFractionDescription{Val{T2},Val{S},Val{L}})
   if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts ≠ zero(s2.Ts)
     warn("parallel(s1,s2): Sampling time mismatch")
     throw(DomainError())
@@ -364,8 +364,8 @@ function _mfdparallelcheck{T1,T2,S,L}(s1::MFD{Val{T1},Val{S},Val{L}},
 end
 
 # siso version
-function _mfdparallel{S,L}(s₁::MFD{Val{:siso},Val{S},Val{:L}},
-  s₂::MFD{Val{:siso},Val{S},Val{L}})
+function _mfdparallel{S,L}(s₁::MatrixFractionDescription{Val{:siso},Val{S},Val{:L}},
+  s₂::MatrixFractionDescription{Val{:siso},Val{S},Val{L}})
   R   = gcd(s₁.D, s₂.D)
   D₁  = div(s₁.D, R)
   D   = D₁*s₂.D        # only include common part R once
@@ -375,8 +375,8 @@ function _mfdparallel{S,L}(s₁::MFD{Val{:siso},Val{S},Val{:L}},
 end
 
 # mimo lfd version
-function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
-  s₂::MFD{Val{:mimo},Val{S},Val{:lfd}})
+function _mfdparallel{S}(s₁::MatrixFractionDescription{Val{:mimo},Val{S},Val{:lfd}},
+  s₂::MatrixFractionDescription{Val{:mimo},Val{S},Val{:lfd}})
   R, V₁, V₂ = gcrd(s₁.D, s₂.D)
   detV₁, adjV₁ = inv(V₁)
   detV₂, adjV₂ = inv(V₂)
@@ -386,8 +386,8 @@ function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
 end
 
 # mimo rfd version
-function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:rfd}},
-  s₂::MFD{Val{:mimo},Val{S},Val{:rfd}})
+function _mfdparallel{S}(s₁::MatrixFractionDescription{Val{:mimo},Val{S},Val{:rfd}},
+  s₂::MatrixFractionDescription{Val{:mimo},Val{S},Val{:rfd}})
   L, V₁, V₂ = gcld(s₁.D, s₂.D)
   detV₁, adjV₁ = inv(V₁)
   detV₂, adjV₂ = inv(V₂)
@@ -397,57 +397,57 @@ function _mfdparallel{S}(s₁::MFD{Val{:mimo},Val{S},Val{:rfd}},
 end
 
 # mimo mixed lfd/rfd version
-function _mfdparallel{S,L1,L2}(s₁::MFD{Val{:mimo},Val{S},Val{L1}},
-  s₂::MFD{Val{:mimo},Val{S},Val{L2}})
+function _mfdparallel{S,L1,L2}(s₁::MatrixFractionDescription{Val{:mimo},Val{S},Val{L1}},
+  s₂::MatrixFractionDescription{Val{:mimo},Val{S},Val{L2}})
   _mfdparallel(lfd(s₁), lfd(s₂))
 end
 
 # siso and mimo of dimensions 1×1
-function _mfdparallel{T1,T2,S,L1,L2}(s₁::MFD{Val{T1},Val{S},Val{L1}},
-  s₂::MFD{Val{T2},Val{S},Val{L2}})
+function _mfdparallel{T1,T2,S,L1,L2}(s₁::MatrixFractionDescription{Val{T1},Val{S},Val{L1}},
+  s₂::MatrixFractionDescription{Val{T2},Val{S},Val{L2}})
   _mfdparallel(mimo(s₁), mimo(s₂))
 end
 
-function +{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:cont},Val{L1}},
-  s2::MFD{Val{T2},Val{:cont},Val{L2}})
+function +{T1,T2,L1,L2}(s1::MatrixFractionDescription{Val{T1},Val{:cont},Val{L1}},
+  s2::MatrixFractionDescription{Val{T2},Val{:cont},Val{L2}})
   _mfdparallelcheck(s1, s2)
   N, D, _ = _mfdparallel(s1, s2)
-  MFD(N, D, Val{L1})
+  MatrixFractionDescription(N, D, Val{L1})
 end
 
-function +{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:disc},Val{L1}},
-  s2::MFD{Val{T2},Val{:disc},Val{L2}})
+function +{T1,T2,L1,L2}(s1::MatrixFractionDescription{Val{T1},Val{:disc},Val{L1}},
+  s2::MatrixFractionDescription{Val{T2},Val{:disc},Val{L2}})
   _mfdparallelcheck(s1, s2)
   N, D, Ts = _mfdparallel(s1, s2)
-  MFD(N, D, Ts, Val{L1})
+  MatrixFractionDescription(N, D, Ts, Val{L1})
 end
 
-.+(s1::MFD{Val{:siso}}, s2::MFD{Val{:siso}}) = +(s1, s2)
+.+(s1::MatrixFractionDescription{Val{:siso}}, s2::MatrixFractionDescription{Val{:siso}}) = +(s1, s2)
 
-+{T,S}(s::MFD{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
++{T,S}(s::MatrixFractionDescription{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
   +(s, convert(typeof(s), g))
-+{T,S}(g::Union{Real,AbstractMatrix}, s::MFD{Val{T},Val{S}}) =
++{T,S}(g::Union{Real,AbstractMatrix}, s::MatrixFractionDescription{Val{T},Val{S}}) =
   +(convert(typeof(s), g), s)
 
-.+(s::MFD{Val{:siso}}, g::Real) = +(s, g)
-.+(g::Real, s::MFD{Val{:siso}}) = +(g, s)
+.+(s::MatrixFractionDescription{Val{:siso}}, g::Real) = +(s, g)
+.+(g::Real, s::MatrixFractionDescription{Val{:siso}}) = +(g, s)
 
 # Subtraction
--(s1::MFD, s2::MFD) = +(s1, -s2)
+-(s1::MatrixFractionDescription, s2::MatrixFractionDescription) = +(s1, -s2)
 
-.-(s1::MFD{Val{:siso}}, s2::MFD{Val{:siso}}) = -(s1, s2)
+.-(s1::MatrixFractionDescription{Val{:siso}}, s2::MatrixFractionDescription{Val{:siso}}) = -(s1, s2)
 
--{T,S}(s::MFD{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
+-{T,S}(s::MatrixFractionDescription{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
   -(s, convert(typeof(s), g))
--{T,S}(g::Union{Real,AbstractMatrix}, s::MFD{Val{T},Val{S}}) =
+-{T,S}(g::Union{Real,AbstractMatrix}, s::MatrixFractionDescription{Val{T},Val{S}}) =
   -(convert(typeof(s), g), s)
 
-.-(s::MFD{Val{:siso}}, g::Real)    = -(s, g)
-.-(g::Real, s::MFD{Val{:siso}})    = -(g, s)
+.-(s::MatrixFractionDescription{Val{:siso}}, g::Real)    = -(s, g)
+.-(g::Real, s::MatrixFractionDescription{Val{:siso}})    = -(g, s)
 
 # Multiplication
-function _mfdseriescheck{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
-  s2::MFD{Val{T2},Val{S}})
+function _mfdseriescheck{T1,T2,S}(s1::MatrixFractionDescription{Val{T1},Val{S}},
+  s2::MatrixFractionDescription{Val{T2},Val{S}})
   # Remark: s1*s2 implies u -> s2 -> s1 -> y
 
   if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts ≠ zero(s2.Ts)
@@ -462,8 +462,8 @@ function _mfdseriescheck{T1,T2,S}(s1::MFD{Val{T1},Val{S}},
 end
 
 # siso version
-function _mfdseries{S,L1,L2}(s₁::MFD{Val{:siso},Val{S},Val{L1}},
-  s₂::MFD{Val{:siso},Val{S},Val{L2}})
+function _mfdseries{S,L1,L2}(s₁::MatrixFractionDescription{Val{:siso},Val{S},Val{L1}},
+  s₂::MatrixFractionDescription{Val{:siso},Val{S},Val{L2}})
   R₁  = gcd(s₁.D, s₂.N)
   R₂  = gcd(s₂.D, s₁.N)
   D   = div(s₁.D, R₁)*div(s₂.D, R₂)
@@ -472,8 +472,8 @@ function _mfdseries{S,L1,L2}(s₁::MFD{Val{:siso},Val{S},Val{L1}},
 end
 
 # mimo lfd version
-function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
-  s₂::MFD{Val{:mimo},Val{S},Val{lfd}})
+function _mfdseries{S}(s₁::MatrixFractionDescription{Val{:mimo},Val{S},Val{:lfd}},
+  s₂::MatrixFractionDescription{Val{:mimo},Val{S},Val{lfd}})
   # D₁^-1 N₁ D₂^-1 N₂
   sᵢ  = lfd(rfd(s₁.N, s₂.D))
   # D₁^-1 Dᵢ^-1 Nᵢ N₂
@@ -485,8 +485,8 @@ function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
 end
 
 # mimo rfd version
-function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:rfd}},
-  s₂::MFD{Val{:mimo},Val{S},Val{:rfd}})
+function _mfdseries{S}(s₁::MatrixFractionDescription{Val{:mimo},Val{S},Val{:rfd}},
+  s₂::MatrixFractionDescription{Val{:mimo},Val{S},Val{:rfd}})
   # N₁ D₁^-1 N₂ D₂^-1
   sᵢ  = rfd(lfd(s₂.N, s₁.D))
   # N₁ Nᵢ Dᵢ^-1 D₂^-1
@@ -498,8 +498,8 @@ function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:rfd}},
 end
 
 # mimo mixed lfd/rfd versions
-function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
-  s₂::MFD{Val{:mimo},Val{S},Val{:rfd}})
+function _mfdseries{S}(s₁::MatrixFractionDescription{Val{:mimo},Val{S},Val{:lfd}},
+  s₂::MatrixFractionDescription{Val{:mimo},Val{S},Val{:rfd}})
   # N₁ D₁^-1 D₂^-1 N₂
   Dᵢ  = s₂.D*s₁.D
   sᵢ  = lfd(rfd(s₂.N, Dᵢ))
@@ -510,8 +510,8 @@ function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:lfd}},
   V₁, V₂, max(s1.Ts, s2.Ts)
 end
 
-function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:rfd}},
-  s₂::MFD{Val{:mimo},Val{S},Val{:lfd}})
+function _mfdseries{S}(s₁::MatrixFractionDescription{Val{:mimo},Val{S},Val{:rfd}},
+  s₂::MatrixFractionDescription{Val{:mimo},Val{S},Val{:lfd}})
   # D₁^-1 N₁ N₂ D₂^-1
   Nᵢ  = s₁.N*s₂.N
   sᵢ  = rfd(lfd(Nᵢ, s₁.D))
@@ -523,44 +523,44 @@ function _mfdseries{S}(s₁::MFD{Val{:mimo},Val{S},Val{:rfd}},
 end
 
 # siso and mimo of dimensions 1×1
-function _mfdseries{T1,T2,S,L1,L2}(s₁::MFD{Val{T1},Val{S},Val{L1}},
-  s₂::MFD{Val{T2},Val{S},Val{L2}})
+function _mfdseries{T1,T2,S,L1,L2}(s₁::MatrixFractionDescription{Val{T1},Val{S},Val{L1}},
+  s₂::MatrixFractionDescription{Val{T2},Val{S},Val{L2}})
   _mfdseries(mimo(s₁), mimo(s₂))
 end
 
-function *{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:cont},Val{L1}},
-  s2::MFD{Val{T2},Val{:cont},Val{L2}})
+function *{T1,T2,L1,L2}(s1::MatrixFractionDescription{Val{T1},Val{:cont},Val{L1}},
+  s2::MatrixFractionDescription{Val{T2},Val{:cont},Val{L2}})
   _mfdseriescheck(s1, s2)
   N, D, _ = _mfdseries(s1, s2)
-  MFD(N, D, Val{L1})
+  MatrixFractionDescription(N, D, Val{L1})
 end
 
-function *{T1,T2,L1,L2}(s1::MFD{Val{T1},Val{:disc},Val{L1}},
-  s2::MFD{Val{T2},Val{:disc},Val{L2}})
+function *{T1,T2,L1,L2}(s1::MatrixFractionDescription{Val{T1},Val{:disc},Val{L1}},
+  s2::MatrixFractionDescription{Val{T2},Val{:disc},Val{L2}})
   _mfdseriescheck(s1, s2)
   N, D, Ts = _mfdseries(s1, s2)
-  MFD(N, D, Ts, Val{L1})
+  MatrixFractionDescription(N, D, Ts, Val{L1})
 end
 
-.*(s1::MFD{Val{:siso}}, s2::MFD{Val{:siso}}) = *(s1, s2)
+.*(s1::MatrixFractionDescription{Val{:siso}}, s2::MatrixFractionDescription{Val{:siso}}) = *(s1, s2)
 
-*{T,S}(s::MFD{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
+*{T,S}(s::MatrixFractionDescription{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
   *(s, convert(typeof(s), g))
-*{T,S}(g::Union{Real,AbstractMatrix}, s::MFD{Val{T},Val{S}}) =
+*{T,S}(g::Union{Real,AbstractMatrix}, s::MatrixFractionDescription{Val{T},Val{S}}) =
   *(convert(typeof(s), g), s)
 
-.*(s::MFD{Val{:siso}}, g::Real)    = *(s, g)
-.*(g::Real, s::MFD{Val{:siso}})    = *(g, s)
+.*(s::MatrixFractionDescription{Val{:siso}}, g::Real)    = *(s, g)
+.*(g::Real, s::MatrixFractionDescription{Val{:siso}})    = *(g, s)
 
 ## Comparison
-=={T,S,L}(s1::MFD{T,S,L}, s2::MFD{T,S,L}) =
+=={T,S,L}(s1::MatrixFractionDescription{T,S,L}, s2::MatrixFractionDescription{T,S,L}) =
   (s1.N == s2.N) && (s1.D == s2.D) && (s1.Ts == s2.Ts)
-=={T1,S1,L1,T2,S2,L2}(s1::MFD{T1,S1,L1}, s2::MFD{T2,S2,L2}) = false
+=={T1,S1,L1,T2,S2,L2}(s1::MatrixFractionDescription{T1,S1,L1}, s2::MatrixFractionDescription{T2,S2,L2}) = false
 
-hash(s::MFD, h::UInt)     = hash(s.D, hash(S.N, hash(S.Ts, h)))
-isequal(s1::MFD, s2::MFD) = (hash(s1) == hash(s2))
+hash(s::MatrixFractionDescription, h::UInt)     = hash(s.D, hash(S.N, hash(S.Ts, h)))
+isequal(s1::MatrixFractionDescription, s2::MatrixFractionDescription) = (hash(s1) == hash(s2))
 
-function isapprox{T,S,L1,L2,M1,M2,M3,M4}(s1::MFD{T,S,L1,M1,M2}, s2::MFD{T,S,L2,M3,M4};
+function isapprox{T,S,L1,L2,M1,M2,M3,M4}(s1::MatrixFractionDescription{T,S,L1,M1,M2}, s2::MatrixFractionDescription{T,S,L2,M3,M4};
   rtol::Real=Base.rtoldefault(promote_type(eltype(mattype(s1.N)),eltype(mattype(s1.D)),eltype(mattype(s2.N)),eltype(mattype(s2.D)))),
   atol::Real=0, norm::Function=vecnorm)
   isapprox(s1.Ts, s2.Ts) || return false # quick exit
