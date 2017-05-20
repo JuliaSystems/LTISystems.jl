@@ -42,6 +42,9 @@ import Base: start, next, done, eltype, length, size
 # Import printing functions
 import Base: summary
 
+# Import step
+import Base: step
+
 # Import mathematical operations for overloading
 import Base: +, .+, -, .-, *, .*, /, ./, ==, !=, isapprox, transpose
 
@@ -86,13 +89,33 @@ export
   rosenbrock,
   series,
   simulate,
-  unwrap, unwrap!
+  unwrap, unwrap!,
+  Signals
 
 # System types
 include("types/system/ltisystem.jl")
 include("types/system/rationaltf.jl")
 include("types/system/statespace.jl")
 include("types/system/mfd.jl")
+
+# Signal types
+module Signals
+
+using Compat
+
+import Base: convert, promote_rule, +, -, *, /
+
+export  discontinuities,
+        Step,
+        Ramp
+
+include("types/signals/abstractsignal.jl")
+include("types/signals/step.jl")
+include("types/signals/ramp.jl")
+include("types/signals/sumofsignals.jl")
+
+end
+using .Signals
 
 # Conversions
 include("conversions/mfd2ss.jl")

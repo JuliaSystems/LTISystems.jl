@@ -14,13 +14,14 @@ end
 
 function simulate{T}(sys::LtiSystem{Val{T},Val{:cont}}, tspan;
   input = (t,x)->zeros(numinputs(sys)), alg::OrdinaryDiffEqAlgorithm = Tsit5(),
-  initial::AbstractVector = zeros(numstates(sys)), kwargs...)
+  initial::AbstractVector = zeros(numstates(sys)), tstops = Float64[], kwargs...)
 
   f     = (t,x,dx)->sys(t,x,dx,input)
   simvar= SimType(initial, zeros(numoutputs(sys)), zeros(numinputs(sys)))
 
+  tstops= vcat(tstops, discontinuities(input, tspan))
   prob  = ODEProblem(f, simvar, tspan)
-  sln   = OrdinaryDiffEq.solve(prob, alg; kwargs...)
+  sln   = OrdinaryDiffEq.solve(prob, alg; tstops = tstops, kwargs...)
 
   tvals = sln.t
   xvals = Matrix{eltype(tvals)}(length(tvals), numstates(sys))
