@@ -60,7 +60,8 @@ end
 nyquist{T}(sys::LtiSystem{Val{T},Val{:disc}}) =
   nyquist(sys, logspace(-6, log10(π/samplingtime(sys)), 1000))
 
-@recipe function f(nr::NyquistResponse; iopairs = Tuple{Int,Int}[], freqs = :rads)
+@recipe function f(nr::NyquistResponse; iopairs = Tuple{Int,Int}[], freqs = :rads,
+  mcircles = false)
   if !isa(iopairs, Vector{Tuple{Int,Int}}) && !isa(iopairs, Tuple{Int,Int})
     warn("plot(nr, <keyword arguments>): `iopairs` must be a `Tuple` or a `Vector{Tuple}`")
     throw(DomainError())
@@ -105,12 +106,11 @@ nyquist{T}(sys::LtiSystem{Val{T},Val{:disc}}) =
 
   plottedfreqs = freqs == :rads ? nr.freqs : 0.5*nr.freqs/π
 
-  # TODO: M-circle drawing
-
   for pair in sortedmap
     outidx = pair[1]
     for inidx in pair[2]
       @series begin
+        primary := true
         label --> "\$G_{$(outidx),$(inidx)}\$"
         hover --> [plottedfreqs; reverse(plottedfreqs)]
 
@@ -121,4 +121,67 @@ nyquist{T}(sys::LtiSystem{Val{T},Val{:disc}}) =
       end
     end
   end
+
+  if mcircles
+    for pair in sortedmap
+      outidx = pair[1]
+      for inidx in pair[2]
+        @series begin
+          primary   := false
+          label     --> ""
+          linecolor --> :black
+          linealpha --> 0.5
+          linestyle --> :dot
+          hover     --> false
+
+          # iso modules
+          modules = [-20., -10, -6, -4, -2, 2, 4, 6, 10, 20]
+          moduler, modulec = _iso_modules(modules)
+
+          # iso phases
+          phases = [-90, -60, -45, -30, -15, 15, 30, 45, 60, 90]
+          phaser, phasec = _iso_phases(phases)
+
+          [moduler, phaser], [modulec, phasec]
+        end
+      end
+    end
+  end
+
+end
+
+# args specified in degrees
+function _iso_phases{T1<:Real,T2<:Real}(args::AbstractVector{T1},
+  w::AbstractVector{T2}=linspace(0, 2π, 200))
+
+  N = tan(args*π/180)
+  radius = sqrt(1+N.^2)./2N
+  xc = -1/2
+  yc = 1./2N
+
+  c = cos(w)
+  s = sin(w)
+
+  reals = xc*ones(c*radius.') + c*radius.'
+  imags = ones(s)*yc.' + s*radius.'
+  reals, imags
+end
+
+# modules specified in db
+function _iso_modules{T1<:Real,T2<:Real}(modules::AbstractVector{T1},
+  w::AbstractVector{T2}=linspace(0, 2π, 200))
+
+  M = exp10(modules/20)
+  abs2(M)
+  radius = M./(abs2(M)-1)
+
+  xc = -M.*radius
+  yc = 0
+
+  c = cos(w)
+  s = sin(w)
+
+  reals = ones(c)*xc.' + c*radius.'
+  imags = yc*ones(s*radius.') + s*radius.'
+  reals, imags
 end
