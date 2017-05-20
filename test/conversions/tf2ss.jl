@@ -17,7 +17,7 @@ Plfd = lfd(SystemsBase._tf2lfd(Ptf)...)
 Pss = ss(Plfd)
 Prfd = rfd(SystemsBase._tf2rfd(Ptf)...)
 
-@test sort(poles(Pss)) ≈ sort(truep)
+@test sort(poles(Pss), lt = (l,r)->real(l)<real(r)) ≈ sort(truep)
 @test zeros(Pss) ≈ truez
 
 # test 2
