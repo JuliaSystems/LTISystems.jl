@@ -6,7 +6,7 @@ ss(s::TransferFunction{Val{:siso},Val{:cont}}) = minreal(ss(_tf2ss(s)...))
 ss(s::TransferFunction{Val{:siso},Val{:disc}}) = minreal(ss(_tf2ss(s)..., s.Ts))
 
 # TODO num(s) instead of num(s.mat[1])
-# TODO assumes proper tf
+# controllable canonical form
 function _tf2ss(s::TransferFunction{Val{:siso}})
   nump  = RationalFunctions.num(s.mat[1])
   denp  = RationalFunctions.den(s.mat[1])
@@ -18,17 +18,16 @@ function _tf2ss(s::TransferFunction{Val{:siso}})
   a     = coeffs(denp)
   b     = zeros(a)
 
-  b[end-m:end] = coeffs(nump) # nump might be of lower order than denp
+  b[1:m+1] = coeffs(nump) # nump might be of lower order than denp
 
-  A     = diagm(ones(eltype(b), n-1), 1)
+  A     = diagm(ones(eltype(b), n-1), -1)
   B     = zeros(eltype(b), n, 1)
   C     = zeros(eltype(b), 1, n)
 
-  A[end,:]  = -a[1:end-1]
-  B[end]    = one(eltype(b))
-  tmp       = b - a.*reverse(b)
-  C[:]      = tmp[1:end-1]
-  D         = 0
+  A[1,:]  = -reverse(a[1:end-1])
+  B[1]    = one(eltype(b))
+  C[:]    = reverse(b[1:end-1])
+  D       = b[end]
 
   A, B, C, D
 end

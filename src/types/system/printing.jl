@@ -165,9 +165,9 @@ function _full{T,S}(stream, m::MIME"text/latex", s::MatrixFractionDescription{Va
   var  = ifelse(S == :cont, "s", "z")
   tvar = _timevar(s)
   println(stream, summary(s))
-  print(stream, "\$")
+  print(stream, "\$\$")
   print(stream, "y($tvar) = den^{-1}($var)num($var) u($tvar)")
-  print(stream, "\$")
+  print(stream, "\$\$")
   println(stream, "in $(_time(s)) time.")
 end
 
@@ -175,9 +175,9 @@ function _full{T,S}(stream, m::MIME"text/latex", s::MatrixFractionDescription{Va
   var  = ifelse(S == :cont, "s", "z")
   tvar = _timevar(s)
   println(stream, summary(s))
-  print(stream, "\$")
+  print(stream, "\$\$")
   print(stream, "y($tvar) = num($var)den^{-1}($var) u($tvar)")
-  print(stream, "\$")
+  print(stream, "\$\$")
   println(stream, "in $(_time(s)) time.")
 end
 
