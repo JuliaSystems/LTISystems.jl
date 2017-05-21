@@ -88,7 +88,7 @@ export
   # reduce,
   rosenbrock,
   series,
-  simulate,
+  simulate, step, ramp,
   unwrap, unwrap!,
   Signals
 
