@@ -19,7 +19,7 @@ function simulate{T}(sys::LtiSystem{Val{T},Val{:cont}}, tspan;
   f     = (t,x,dx)->sys(t,x,dx,input)
   simvar= SimType(initial, zeros(numoutputs(sys)), zeros(numinputs(sys)))
 
-  tstops= vcat(tstops, discontinuities(input, tspan))
+  tstops= [tstops..., discontinuities(input, tspan)...]
   prob  = ODEProblem(f, simvar, tspan)
   sln   = OrdinaryDiffEq.solve(prob, alg; tstops = tstops, kwargs...)
 
@@ -63,3 +63,8 @@ end
 
 simulate(input::Function, sys::LtiSystem, tspan; kwargs...) =
   simulate(sys, tspan; input = input, kwargs...)
+
+step(sys, tspan; kwargs...) = simulate(sys, tspan, kwargs...,
+  input = Step(zeros(numinputs(sys)), ones(numinputs(sys))))
+ramp(sys, tspan; kwargs...) = simulate(sys, tspan, kwargs...,
+  input = Ramp(zeros(numinputs(sys)), ones(numinputs(sys))))
