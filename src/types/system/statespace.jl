@@ -260,19 +260,6 @@ getindex(s::StateSpace{Val{:mimo}}, ::Colon)          = s[1:end]
 getindex(s::StateSpace{Val{:mimo}}, ::Colon, ::Colon) = s[1:s.ny,1:s.nu]
 endof(s::StateSpace{Val{:mimo}})                      = endof(s.D)
 
-# Conversion and promotion
-promote_rule{T1<:Real,T2,S,M1,M2,M3,M4}(::Type{T1},
-  ::Type{StateSpace{Val{T2},Val{S},M1,M2,M3,M4}}) = StateSpace{Val{T2},Val{S}}
-promote_rule{T<:AbstractMatrix,S,M1,M2,M3,M4}(::Type{T},
-  ::Type{StateSpace{Val{:mimo},Val{S},M1,M2,M3,M4}}) = StateSpace{Val{:mimo},Val{S}}
-
-convert(::Type{StateSpace{Val{:siso},Val{:cont}}}, g::Real) = ss(g)
-convert(::Type{StateSpace{Val{:siso},Val{:disc}}}, g::Real) = ss(g, zero(Float64))
-convert(::Type{StateSpace{Val{:mimo},Val{:cont}}}, g::Real) = ss(fill(g,1,1))
-convert(::Type{StateSpace{Val{:mimo},Val{:disc}}}, g::Real) = ss(fill(g,1,1), zero(Float64))
-convert(::Type{StateSpace{Val{:mimo},Val{:cont}}}, g::AbstractMatrix) = ss(g)
-convert(::Type{StateSpace{Val{:mimo},Val{:disc}}}, g::AbstractMatrix) = ss(g, zero(Float64))
-
 # Multiplicative and additive identities (meaningful only for SISO)
 one{M1,M2,M3,M4}(::Type{StateSpace{Val{:siso},Val{:cont},M1,M2,M3,M4}})   =
   StateSpace(zeros(eltype(M1),0,0), zeros(eltype(M2),0,1), zeros(eltype(M3),1,0),
@@ -420,10 +407,14 @@ end
 
 .+(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = +(s1, s2)
 
-+{T,S}(s::StateSpace{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
-  +(s, convert(typeof(s), g))
-+{T,S}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{S}}) =
-  +(convert(typeof(s), g), s)
++{T}(s::StateSpace{Val{T},Val{:disc}}, g::Union{Real,AbstractMatrix}) =
+  +(s, ss(g, samplingtime(s)))
++{T}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:disc}}) =
+  +(ss(g, samplingtime(s)), s)
++{T}(s::StateSpace{Val{T},Val{:cont}}, g::Union{Real,AbstractMatrix}) =
+  +(s, ss(g))
++{T}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:cont}}) =
+  +(ss(g), s)
 
 .+(s::StateSpace{Val{:siso}}, g::Real)    = +(s, g)
 .+(g::Real, s::StateSpace{Val{:siso}})    = +(g, s)
@@ -433,10 +424,8 @@ end
 
 .-(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = -(s1, s2)
 
--{T,S}(s::StateSpace{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
-  -(s, convert(typeof(s), g))
--{T,S}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{S}}) =
-  -(convert(typeof(s), g), s)
+-(s::StateSpace, g::Union{Real,AbstractMatrix}) = +(s, -g)
+-(g::Union{Real,AbstractMatrix}, s::StateSpace) = +(g, -s)
 
 .-(s::StateSpace{Val{:siso}}, g::Real)    = -(s, g)
 .-(g::Real, s::StateSpace{Val{:siso}})    = -(g, s)
@@ -493,10 +482,14 @@ end
 
 .*(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = *(s1, s2)
 
-*{T,S}(s::StateSpace{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
-  *(s, convert(typeof(s), g))
-*{T,S}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{S}}) =
-  *(convert(typeof(s), g), s)
+*{T}(s::StateSpace{Val{T},Val{:disc}}, g::Union{Real,AbstractMatrix}) =
+  *(s, ss(g, samplingtime(s)))
+*{T}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:disc}}) =
+  *(ss(g, samplingtime(s)), s)
+*{T}(s::StateSpace{Val{T},Val{:cont}}, g::Union{Real,AbstractMatrix}) =
+  *(s, ss(g))
+*{T}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:cont}}) =
+  *(ss(g), s)
 
 .*(s::StateSpace{Val{:siso}}, g::Real)    = *(s, g)
 .*(g::Real, s::StateSpace{Val{:siso}})    = *(g, s)
@@ -506,10 +499,10 @@ end
 
 ./(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = /(s1, s2)
 
-/{T,S}(s::StateSpace{Val{T},Val{S}}, g::Union{Real,AbstractMatrix}) =
-  /(s, convert(typeof(s), g))
-/{T,S}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{S}}) =
-  /(convert(typeof(s), g), s)
+/(s::StateSpace, g::Union{Real,AbstractMatrix}) =
+  *(s, inv(g))
+/(g::Union{Real,AbstractMatrix}, s::StateSpace) =
+  *(g, inv(s))
 
 ./(s::StateSpace{Val{:siso}}, g::Real)    = /(s, g)
 ./(g::Real, s::StateSpace{Val{:siso}})    = /(g, s)
