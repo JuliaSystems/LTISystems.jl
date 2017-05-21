@@ -43,8 +43,10 @@ end
 function _full{T,S}(stream, m::MIME"text/latex", s::StateSpace{Val{T},Val{S}})
   tvar = _timevar(s)
   println(stream, summary(s))
-  println(stream, "$(_printxupdate(s)) = Ax($tvar) + Bu($tvar,x)")
-  println(stream, "y($tvar) = Cx($tvar) + Du($tvar,x)")
+  print(stream, "\\begin{align*}")
+  print(stream, "$(_printxupdate(s)) &= Ax($tvar) + Bu($tvar,x)\\\\")
+  print(stream, "y($tvar)            &= Cx($tvar) + Du($tvar,x)")
+  print(stream, "\\end{align*}")
   println(stream, "with $(numstates(s)) states in $(_time(s)) time.")
 end
 
@@ -90,9 +92,9 @@ function _full{T,S}(stream, m::MIME"text/latex", s::TransferFunction{Val{T},Val{
   var  = ifelse(S == :cont, "s", "z")
   tvar = _timevar(s)
   println(stream, summary(s))
-  print(stream, "\$")
+  print(stream, "\$\$")
   print(stream, "y($tvar) = \\tfrac{\\mathrm{num}($(var))}{\\mathrm{den}($(var))} u($tvar)")
-  print(stream, "\$")
+  print(stream, "\$\$")
   println(stream, "in $(_time(s)) time.")
 end
 
