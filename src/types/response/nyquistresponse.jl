@@ -99,8 +99,8 @@ nyquist{T}(sys::LtiSystem{Val{T},Val{:disc}}) =
   # Define plotting rules
   layout      --> (1,1)
   link        --> :x
-  xlabel      --> "Real Axis (-)"
-  ylabel      --> "Imaginary Axis (-)"
+  xlabel      --> "Real Axis"
+  ylabel      --> "Imaginary Axis"
   legend      --> :topright
   grid        --> true
 

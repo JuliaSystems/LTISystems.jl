@@ -64,7 +64,7 @@ end
 simulate(input::Function, sys::LtiSystem, tspan; kwargs...) =
   simulate(sys, tspan; input = input, kwargs...)
 
-step(sys::LtiSystem, tspan; kwargs...) = simulate(sys, tspan, kwargs...,
+step(sys::LtiSystem, tspan; kwargs...) = simulate(sys, tspan; kwargs...,
   input = Step(zeros(numinputs(sys)), ones(numinputs(sys))))
-ramp(sys::LtiSystem, tspan; kwargs...) = simulate(sys, tspan, kwargs...,
+ramp(sys::LtiSystem, tspan; kwargs...) = simulate(sys, tspan; kwargs...,
   input = Ramp(zeros(numinputs(sys)), ones(numinputs(sys))))

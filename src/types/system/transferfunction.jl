@@ -56,35 +56,36 @@ immutable TransferFunction{T,S,U,V} <: LtiSystem{T,S}
     end
 
     sidx = 0 # number of states visited so far
+    out = zeros(eltype(ucalc), numoutputs(sys))
     for i in 1:numoutputs(sys)
-      out = zero(ucalc[1])
       for j in 1:numinputs(sys)
-        aout, aidx = _simulate_siso(sys, x, dx, ucalc[j], i, j, sidx)
-        out += aout
-        sidx += aidx
+        aout, aidx = sys(x, dx, ucalc, i, j, sidx)
+        out[i]  += aout
+        sidx    += aidx
       end
-      x.y[i] = out
     end
+    x.u = ucalc
+    x.y = out
   end
 
-  function _simulate_siso(sys::TransferFunction, x::DEDataArray, dx::AbstractVector, u, i, j, idx)
-    r = sys.mat[i,j]
-    bp, ap = coeffs(r)
-    bc, ac = reverse(bp), reverse(ap)
+  function (sys::TransferFunction)(x::DEDataArray, dx::AbstractVector, u, i, j, idx)
+    # @assert degree(nump) ≤ degree(denp)
+    r     = sys.mat[i,j]
+    nump  = num(r)
+    denp  = den(r)
+    nump /= denp[end]
+    denp /= denp[end]
 
-    m      = length(bc)
-    n      = length(ac)
+    direct,nump = divrem(nump,denp)
+    db,da       = degree(nump), degree(denp)
 
-    a      = ac
-    b      = zeros(ac)
-    b[1:m] = bc
-    silen = n-1
-    dx[idx+(1:silen)] = -a[2:end].*x[idx+1] + b[2:end].*u
-    for j = 2:silen
-      dx[idx+j-1] += x[idx+j]
+    dx[idx+(da:-1:1)]     = -denp[0:end-1]*x.x[idx+1]
+    dx[idx+(da:-1:da-db)] += nump[0:db]*u[j]
+    for k = 2:da
+      dx[idx+k-1] += x.x[idx+k]
     end
-    out = x.x[idx+1]
-    out, silen
+    out = x.x[idx+1] + direct*u[j]
+    out, da
   end
 
   # Evaluate system models at given complex numbers
