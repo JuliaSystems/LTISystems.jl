@@ -47,6 +47,46 @@ immutable TransferFunction{T,S,U,V} <: LtiSystem{T,S}
   end
 
   # Function calls
+  function (sys::TransferFunction)(t::Real, x::DEDataArray, dx::AbstractVector, u)
+    ucalc = u(t, x.y)
+    ucalc = isa(ucalc, Real) ? [ucalc] : ucalc
+    if !isa(ucalc, AbstractVector) || length(ucalc) ≠ sys.nu || !(eltype(ucalc) <: Real)
+      warn("sys(t,x,dx,u): u(t,y) has to be an `AbstractVector` of length $(sys.nu), containing `Real` values")
+      throw(DomainError())
+    end
+
+    sidx = 0 # number of states visited so far
+    for i in 1:numoutputs(sys)
+      out = zero(ucalc[1])
+      for j in 1:numinputs(sys)
+        aout, aidx = _simulate_siso(sys, x, dx, ucalc[j], i, j, sidx)
+        out += aout
+        sidx += aidx
+      end
+      x.y[i] = out
+    end
+  end
+
+  function _simulate_siso(sys::TransferFunction, x::DEDataArray, dx::AbstractVector, u, i, j, idx)
+    r = sys.mat[i,j]
+    bp, ap = coeffs(r)
+    bc, ac = reverse(bp), reverse(ap)
+
+    m      = length(bc)
+    n      = length(ac)
+
+    a      = ac
+    b      = zeros(ac)
+    b[1:m] = bc
+    silen = n-1
+    dx[idx+(1:silen)] = -a[2:end].*x[idx+1] + b[2:end].*u
+    for j = 2:silen
+      dx[idx+j-1] += x[idx+j]
+    end
+    out = x.x[idx+1]
+    out, silen
+  end
+
   # Evaluate system models at given complex numbers
   (sys::TransferFunction{Val{:siso}})(x::Number)                                    =
     (f = sys.mat[1]; convert(Complex128, f(x)))
@@ -180,7 +220,7 @@ tf{T<:Real,S}(mat::AbstractMatrix{T}, Ts::Real, t::Type{Val{S}} = Val{:notc})   
 
 # Interfaces
 samplingtime(s::TransferFunction) = s.Ts
-
+numstates(s::TransferFunction)    = sum(x->degree(x)[2], s.mat)
 numinputs(s::TransferFunction)    = s.nu
 numoutputs(s::TransferFunction)   = s.ny
 

@@ -94,7 +94,7 @@ export
 
 # System types
 include("types/system/ltisystem.jl")
-include("types/system/rationaltf.jl")
+include("types/system/transferfunction.jl")
 include("types/system/statespace.jl")
 include("types/system/mfd.jl")
 include("types/system/printing.jl")
