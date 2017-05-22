@@ -15,7 +15,6 @@ immutable SumOfSignals{T,N} <: AbstractSignal{T,N}
       end
       T = promote_type(T, _eltype(signals[2]))
     end
-    @show T, N
     new{T,N}(convert(Vector{AbstractSignal{T,N}}, signals))
   end
 
@@ -42,12 +41,16 @@ function discontinuities{T1,T2<:Real,T3<:Real}(sos::SumOfSignals{T1},
   [tstop for tstop in tstops]
 end
 
+convert{T,N}(::Type{AbstractSignal{T,N}}, sos::SumOfSignals{T,N})       = sos
+convert{T1,T2,N}(::Type{AbstractSignal{T1,N}}, sos::SumOfSignals{T2,N}) =
+  SumOfSignals(convert(Vector{AbstractSignal{T1,N}}, sos.signals))
+
 -(sos::SumOfSignals) = SumOfSignals(-signals)
 
 # Relation between `Real`s
 
 function +{T<:Real}(x::Union{T,AbstractVector{T}}, sos::SumOfSignals)
-  temp = [signal + x for signal in sos]
+  temp = [signal + x for signal in sos.signals]
   SumOfSignals(temp)
 end
 +{T<:Real}(sos::SumOfSignals, x::Union{T,AbstractVector{T}}) = +(x,  sos)
@@ -55,8 +58,23 @@ end
 -{T<:Real}(sos::SumOfSignals, x::Union{T,AbstractVector{T}}) = +(sos, -x)
 
 function *(x::Real, sos::SumOfSignals)
-  temp = [x*signal for signal in sos]
+  temp = [x*signal for signal in sos.signals]
   SumOfSignals(temp)
 end
 *(sos::SumOfSignals, x::Real) = *(x,   sos)
 /(sos::SumOfSignals, x::Real) = *(sos, 1/x)
+
+# Relationship between `AbstractSignal`s
+
++{T1,T2,N}(sos::SumOfSignals{T1,N}, s::AbstractSignal{T2,N}) =
+  SumOfSignals(push!(copy(sos.signals), s))
++{T1,T2,N}(s::AbstractSignal{T2,N}, sos::SumOfSignals{T1,N}) = +(sos,  s)
+-{T1,T2,N}(s::AbstractSignal{T2,N}, sos::SumOfSignals{T1,N}) = +(s, -sos)
+-{T1,T2,N}(sos::SumOfSignals{T1,N}, s::AbstractSignal{T2,N}) = +(sos, -s)
+
+# Relationship among `SumOfSignals`
+
++{T1,T2,N}(sos1::SumOfSignals{T1,N}, sos2::SumOfSignals{T2,N}) =
+  SumOfSignals(AbstractSignal{promote_type(T1,T2),N}[sos1.signals..., sos2.signals...])
+-{T1,T2,N}(sos1::SumOfSignals{T1,N}, sos2::SumOfSignals{T2,N}) =
+  SumOfSignals(AbstractSignal{promote_type(T1,T2),N}[sos1.signals..., -sos2.signals...])

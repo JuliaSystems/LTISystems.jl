@@ -107,12 +107,16 @@ using Compat
 import Base: convert, promote_rule, +, -, *, /
 
 export  discontinuities,
+        Ramp,
+        Square,
         Step,
-        Ramp
+        Triangle
 
 include("types/signals/abstractsignal.jl")
-include("types/signals/step.jl")
 include("types/signals/ramp.jl")
+include("types/signals/square.jl")
+include("types/signals/step.jl")
+# include("types/signals/triangle.jl")
 include("types/signals/sumofsignals.jl")
 
 end

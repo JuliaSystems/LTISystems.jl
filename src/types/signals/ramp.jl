@@ -4,7 +4,7 @@ immutable Ramp{T,N} <: AbstractSignal{T,N}
   dc::Vector{T}
 
   function (::Type{Ramp}){T1<:Real,T2<:Real,T3<:Real}(rt::Vector{T1}, rr::Vector{T2},
-    dc::Vector{T3} = zeros(T2, length(rr)))
+    dc::Vector{T3} = zeros(rr))
     if length(rt) ≠ length(rr) || length(rt) ≠ length(dc)
       warn("Ramp(rt, rr, dc): `rt`, `rr` and `dc` must all have the same lengths")
       throw(DomainError())

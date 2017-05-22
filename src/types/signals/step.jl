@@ -4,7 +4,7 @@ immutable Step{T,N} <: AbstractSignal{T,N}
   dc::Vector{T}
 
   function (::Type{Step}){T1<:Real,T2<:Real,T3<:Real}(st::Vector{T1}, sv::Vector{T2},
-    dc::Vector{T3} = zeros(T2, length(sv)))
+    dc::Vector{T3} = zeros(sv))
     if length(st) ≠ length(sv) || length(st) ≠ length(dc)
       warn("Step(st, sv, dc): `st`, `sv` and `dc` must all have the same lengths")
       throw(DomainError())
