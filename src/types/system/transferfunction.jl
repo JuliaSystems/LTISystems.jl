@@ -84,7 +84,7 @@ immutable TransferFunction{T,S,U,V} <: LtiSystem{T,S}
     for k = 2:da
       dx[idx+k-1] += x.x[idx+k]
     end
-    out = x.x[idx+1] + direct*u[j]
+    out = x.x[idx+1] + direct[0]*u[j]
     out, da
   end
 
