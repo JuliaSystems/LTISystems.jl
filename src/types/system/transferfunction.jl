@@ -76,15 +76,17 @@ immutable TransferFunction{T,S,U,V} <: LtiSystem{T,S}
     nump /= denp[end]
     denp /= denp[end]
 
-    direct,nump = divrem(nump,denp)
-    db,da       = degree(nump), degree(denp)
+    db,da = degree(nump), degree(denp)
+    # take care of direct term
+    out   = db == da ? nump[db]*u[j] : zero(eltype(x.y))
+    nb    = db == da ? db-1          : db
 
     dx[idx+(da:-1:1)]     = -denp[0:end-1]*x.x[idx+1]
-    dx[idx+(da:-1:da-db)] += nump[0:db]*u[j]
+    dx[idx+(da:-1:da-nb)] += nump[0:nb]*u[j]
     for k = 2:da
       dx[idx+k-1] += x.x[idx+k]
     end
-    out = x.x[idx+1] + direct[0]*u[j]
+    out += x.x[idx+1]
     out, da
   end
 

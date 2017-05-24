@@ -62,31 +62,35 @@ immutable MatrixFractionDescription{T,S,L,M1,M2}  <: LtiSystem{T,S}
       throw(DomainError())
     end
 
-    N = num(sys)
-    D = den(sys)
-    D₀= coeffs(D)[degree(D)]
+    ny  = numoutputs(sys)
+    N   = num(sys)
+    D   = den(sys)
+    D₀  = coeffs(D)[degree(D)]
     if D₀ != eye(D₀)
       N = inv(D₀)*N
       D = inv(D₀)*D
     end
 
-    deg   = max(degree(N), degree(D))
-    dx[:] = zeros(dx)
+    degD,degN = degree(D), degree(N)
+    # take care of direct term
+    x.y = degN == degD ? coeffs(N)[degN]*ucalc : zeros(x.y)
 
-    ny = numoutputs(sys)
+    dx[:] = zeros(dx)
     for (k,v) in coeffs(D)
-      if k < deg
-        dx[(deg-1-k)*ny+(1:ny)] = -v*x.x[1:ny]
+      if k < degD
+        dx[(degD-1-k)*ny+(1:ny)] = -v*x.x[1:ny]
       end
     end
     for (k,v) in coeffs(N)
-      dx[(deg-1-k)*ny+(1:ny)] += v*ucalc
+      if k < degD
+        dx[(degD-1-k)*ny+(1:ny)] += v*ucalc
+      end
     end
-    for k = 2:deg
+    for k = 2:degD
       dx[(k-2)*ny+(1:ny)] += x.x[(k-1)*ny+(1:ny)]
     end
-    x.u = ucalc
-    x.y = x.x[1:ny]
+    x.u  = ucalc
+    x.y += x.x[1:ny]
   end
 end
 
