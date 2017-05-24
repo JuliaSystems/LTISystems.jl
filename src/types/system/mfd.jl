@@ -52,6 +52,35 @@ immutable MatrixFractionDescription{T,S,L,M1,M2}  <: LtiSystem{T,S}
                                                             convert(Float64, Ts))
     # should we do better checks than just converting the variable to the correct one?
   end
+
+  # Function calls
+  function (sys::MatrixFractionDescription)(t::Real, x::DEDataArray, dx::AbstractVector, u)
+    ucalc = u(t, x.y)
+    ucalc = isa(ucalc, Real) ? [ucalc] : ucalc
+    if !isa(ucalc, AbstractVector) || length(ucalc) ≠ sys.nu || !(eltype(ucalc) <: Real)
+      warn("sys(t,x,dx,u): u(t,y) has to be an `AbstractVector` of length $(sys.nu), containing `Real` values")
+      throw(DomainError())
+    end
+
+    N     = num(sys)
+    D     = den(sys)
+    dN,dD = degree(N), degree(D)
+
+    ny = numoutputs(sys)
+    for (k,v) in coeffs(D)
+      if k < dD
+        dx[(dD-1-k)*ny+(1:ny)] = -v*x.x[1:ny]
+      end
+    end
+    for (k,v) in coeffs(N)
+      dx[(dD-1-k)*ny+(1:ny)] += v*ucalc
+    end
+    for k = 2:dD
+      dx[(k-2)*ny+(1:ny)] += x.x[(k-1)*ny+(1:ny)]
+    end
+    x.u = ucalc
+    x.y = x.x[1:ny]
+  end
 end
 
 function mfdcheck{T<:Real,S<:Real}(N::Poly{T}, D::Poly{S}, Ts::Real = zero(Float64))
@@ -175,13 +204,12 @@ samplingtime(s::MatrixFractionDescription)              = s.Ts
 islfd{T,S,L}(s::MatrixFractionDescription{T,S,Val{L}})  = false
 islfd{T,S}(s::MatrixFractionDescription{T,S,Val{:lfd}}) = true
 isrfd{T,S,L}(s::MatrixFractionDescription{T,S,Val{L}})  = !islfd(s)
-#num(s::MatrixFractionDescription)                       = s.N
-#den(s::MatrixFractionDescription)                       = s.D
+num(s::MatrixFractionDescription)                       = s.N
+den(s::MatrixFractionDescription)                       = s.D
 
 # Think carefully about how to implement numstates
-numstates(s::MatrixFractionDescription)               = degree(s.D)*length(s) #  /TODO what is the appropriate one?
+numstates(s::MatrixFractionDescription)               = degree(s.D)*numoutputs(s) #  /TODO what is the appropriate one?
 # Currently, we only allow for proper systems
-numstates(s::MatrixFractionDescription{Val{:siso}})   = degree(s.D)
 numinputs(s::MatrixFractionDescription)               = s.nu
 numoutputs(s::MatrixFractionDescription)              = s.ny
 
