@@ -109,6 +109,7 @@ import Base: convert, promote_rule, +, -, *, /
 export  discontinuities,
         PRBS,
         Ramp,
+        Sinusoid,
         Square,
         Step,
         Triangle
@@ -116,6 +117,7 @@ export  discontinuities,
 include("types/signals/abstractsignal.jl")
 include("types/signals/prbs.jl")
 include("types/signals/ramp.jl")
+include("types/signals/sinusoid.jl")
 include("types/signals/square.jl")
 include("types/signals/step.jl")
 # include("types/signals/triangle.jl")
