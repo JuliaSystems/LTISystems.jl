@@ -120,8 +120,8 @@ include("types/signals/ramp.jl")
 include("types/signals/sinusoid.jl")
 include("types/signals/square.jl")
 include("types/signals/step.jl")
-# include("types/signals/triangle.jl")
 include("types/signals/sumofsignals.jl")
+include("types/signals/triangle.jl")
 
 end
 using .Signals
