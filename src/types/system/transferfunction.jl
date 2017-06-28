@@ -81,12 +81,14 @@ immutable TransferFunction{T,S,U,V} <: LtiSystem{T,S}
     out   = db == da ? nump[db]*u[j] : zero(eltype(x.y))
     nb    = db == da ? db-1          : db
 
-    dx[idx+(da:-1:1)]     = -denp[0:end-1]*x.x[idx+1]
-    dx[idx+(da:-1:da-nb)] += nump[0:nb]*u[j]
-    for k = 2:da
-      dx[idx+k-1] += x.x[idx+k]
+    if da > 0
+      dx[idx+(da:-1:1)]     = -denp[0:end-1]*x.x[idx+1]
+      dx[idx+(da:-1:da-nb)] += nump[0:nb]*u[j]
+      for k = 2:da
+        dx[idx+k-1] += x.x[idx+k]
+      end
+      out += x.x[idx+1]
     end
-    out += x.x[idx+1]
     out, da
   end
 
