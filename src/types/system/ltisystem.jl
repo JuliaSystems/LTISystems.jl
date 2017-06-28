@@ -41,115 +41,115 @@ function numoutputs(s::LtiSystem)
   throw(MethodError(numoutputs, Tuple{typeof(s)}))
 end
 
-# Iteration interface (meaningful in MIMO)
-function start(s::LtiSystem{Val{:mimo}})
-  warn("start(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(start, Tuple{typeof(s)}))
-end
-
-function next(s::LtiSystem{Val{:mimo}}, state)
-  warn("next(s, state) not implemented for (s::$(typeof(s)), state::$(typeof(state)))")
-  throw(MethodError(next, Tuple{typeof(s),typeof(state)}))
-end
-
-function done(s::LtiSystem{Val{:mimo}}, state)
-  warn("done(s, state) not implemented for (s::$(typeof(s)), state::$(typeof(state)))")
-  throw(MethodError(done, Tuple{typeof(s),typeof(state)}))
-end
-
-function eltype(s::Type{LtiSystem{Val{:mimo}}})
-  warn("eltype(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(eltype, Tuple{typeof(s)}))
-end
-
-function length(s::LtiSystem{Val{:mimo}})
-  warn("length(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(length, Tuple{typeof(s)}))
-end
-
-function size(s::LtiSystem{Val{:mimo}}, d)
-  warn("size(s, d) not implemented for (s::$(typeof(s)), d::$(typeof(d)))")
-  throw(MethodError(size, Tuple{typeof(s),typeof(d)}))
-end
-
-# Indexing
-function getindex(s::LtiSystem{Val{:mimo}}, i)
-  warn("getindex(s, i) not implemented for (s::$(typeof(s)), i::$(typeof(i)))")
-  throw(MethodError(getindex, Tuple{typeof(s),typeof(i)}))
-end
-
-function setindex!(s::LtiSystem{Val{:mimo}}, v, i)
-  warn("setindex!(s, v, i) not implemented for (s::$(typeof(s)), v::$(typeof(v)), i::$(typeof(i)))")
-  throw(MethodError(setindex!, Tuple{typeof(s),typeof(v),typeof(i)}))
-end
-
-function endof(s::LtiSystem{Val{:mimo}})
-  warn("endof(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(endof, Tuple{typeof(s)}))
-end
-
-# Simple analysis things
-function poles(s::LtiSystem)
-  warn("poles(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(poles, Tuple{typeof(s)}))
-end
-
-function zeros(s::LtiSystem)
-  warn("zeros(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(zeros, Tuple{typeof(s)}))
-end
-
-function isproper(s::LtiSystem)
-  warn("isproper(s) not implemented for s::$(typeof(s1))")
-  throw(MethodError(evalfr, Tuple{typeof(s),typeof(ω)}))
-end
-
-# is strictly proper, better function name?
-function isstrictlyproper(s::LtiSystem)
-  warn("issproper(s) not implemented for s::$(typeof(s1))")
-  throw(MethodError(evalfr, Tuple{typeof(s),typeof(ω)}))
-end
-
-function tzeros(s::LtiSystem)
-  warn("tzeros(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(tzeros, Tuple{typeof(s)}))
-end
-
-function zpkdata(s::LtiSystem)
-  warn("zpkdata(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(zpkdata, Tuple{typeof(s)}))
-end
-
-function num(s::LtiSystem)
-  warn("num(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(num, Tuple{typeof(s)}))
-end
-
-function den(s::LtiSystem)
-  warn("denpoly(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(denpoly, Tuple{typeof(s)}))
-end
-
-# Constructors among different types
-function lfd(s::LtiSystem)
-  warn("mfd(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(mfd, Tuple{typeof(s)}))
-end
-
-function rfd(s::LtiSystem)
-  warn("mfd(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(mfd, Tuple{typeof(s)}))
-end
-
-function ss(s::LtiSystem)
-  warn("ss(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(ss, Tuple{typeof(s)}))
-end
-
-function tf(s::LtiSystem)
-  warn("tf(s) not implemented for s::$(typeof(s))")
-  throw(MethodError(tf, Tuple{typeof(s)}))
-end
+# # Iteration interface (meaningful in MIMO)
+# function start(s::LtiSystem{Val{:mimo}})
+#   warn("start(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(start, Tuple{typeof(s)}))
+# end
+#
+# function next(s::LtiSystem{Val{:mimo}}, state)
+#   warn("next(s, state) not implemented for (s::$(typeof(s)), state::$(typeof(state)))")
+#   throw(MethodError(next, Tuple{typeof(s),typeof(state)}))
+# end
+#
+# function done(s::LtiSystem{Val{:mimo}}, state)
+#   warn("done(s, state) not implemented for (s::$(typeof(s)), state::$(typeof(state)))")
+#   throw(MethodError(done, Tuple{typeof(s),typeof(state)}))
+# end
+#
+# function eltype(s::Type{LtiSystem{Val{:mimo}}})
+#   warn("eltype(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(eltype, Tuple{typeof(s)}))
+# end
+#
+# function length(s::LtiSystem{Val{:mimo}})
+#   warn("length(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(length, Tuple{typeof(s)}))
+# end
+#
+# function size(s::LtiSystem{Val{:mimo}}, d)
+#   warn("size(s, d) not implemented for (s::$(typeof(s)), d::$(typeof(d)))")
+#   throw(MethodError(size, Tuple{typeof(s),typeof(d)}))
+# end
+#
+# # Indexing
+# function getindex(s::LtiSystem{Val{:mimo}}, i)
+#   warn("getindex(s, i) not implemented for (s::$(typeof(s)), i::$(typeof(i)))")
+#   throw(MethodError(getindex, Tuple{typeof(s),typeof(i)}))
+# end
+#
+# function setindex!(s::LtiSystem{Val{:mimo}}, v, i)
+#   warn("setindex!(s, v, i) not implemented for (s::$(typeof(s)), v::$(typeof(v)), i::$(typeof(i)))")
+#   throw(MethodError(setindex!, Tuple{typeof(s),typeof(v),typeof(i)}))
+# end
+#
+# function endof(s::LtiSystem{Val{:mimo}})
+#   warn("endof(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(endof, Tuple{typeof(s)}))
+# end
+#
+# # Simple analysis things
+# function poles(s::LtiSystem)
+#   warn("poles(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(poles, Tuple{typeof(s)}))
+# end
+#
+# function zeros(s::LtiSystem)
+#   warn("zeros(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(zeros, Tuple{typeof(s)}))
+# end
+#
+# function isproper(s::LtiSystem)
+#   warn("isproper(s) not implemented for s::$(typeof(s1))")
+#   throw(MethodError(evalfr, Tuple{typeof(s),typeof(ω)}))
+# end
+#
+# # is strictly proper, better function name?
+# function isstrictlyproper(s::LtiSystem)
+#   warn("issproper(s) not implemented for s::$(typeof(s1))")
+#   throw(MethodError(evalfr, Tuple{typeof(s),typeof(ω)}))
+# end
+#
+# function tzeros(s::LtiSystem)
+#   warn("tzeros(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(tzeros, Tuple{typeof(s)}))
+# end
+#
+# function zpkdata(s::LtiSystem)
+#   warn("zpkdata(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(zpkdata, Tuple{typeof(s)}))
+# end
+#
+# function num(s::LtiSystem)
+#   warn("num(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(num, Tuple{typeof(s)}))
+# end
+#
+# function den(s::LtiSystem)
+#   warn("denpoly(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(denpoly, Tuple{typeof(s)}))
+# end
+#
+# # Constructors among different types
+# function lfd(s::LtiSystem)
+#   warn("mfd(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(mfd, Tuple{typeof(s)}))
+# end
+#
+# function rfd(s::LtiSystem)
+#   warn("mfd(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(mfd, Tuple{typeof(s)}))
+# end
+#
+# function ss(s::LtiSystem)
+#   warn("ss(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(ss, Tuple{typeof(s)}))
+# end
+#
+# function tf(s::LtiSystem)
+#   warn("tf(s) not implemented for s::$(typeof(s))")
+#   throw(MethodError(tf, Tuple{typeof(s)}))
+# end
 
 # Methods
 # function series{T1,T2,S}(s1::LtiSystem{Val{T1},Val{S}}, s2::LtiSystem{Val{T2},Val{S}})
