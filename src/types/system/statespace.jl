@@ -53,7 +53,7 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
     end
     dx[:] = A*x + B*ucalc
   end
-  function (sys::StateSpace)(t::Real, x::DEDataArray, dx::AbstractVector, u)
+  function (sys::StateSpace)(t::Real, x::DiffEqBase.DEDataArray, dx::AbstractVector, u)
     A, B, C, D = sys.A, sys.B, sys.C, sys.D
     ucalc = u(t, x.x)
     ucalc = isa(ucalc, Real) ? [ucalc] : ucalc

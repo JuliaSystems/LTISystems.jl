@@ -47,7 +47,7 @@ immutable TransferFunction{T,S,U,V} <: LtiSystem{T,S}
   end
 
   # Function calls
-  function (sys::TransferFunction)(t::Real, x::DEDataArray, dx::AbstractVector, u)
+  function (sys::TransferFunction)(t::Real, x::DiffEqBase.DEDataArray, dx::AbstractVector, u)
     ucalc = u(t, x.y)
     ucalc = isa(ucalc, Real) ? [ucalc] : ucalc
     if !isa(ucalc, AbstractVector) || length(ucalc) ≠ sys.nu || !(eltype(ucalc) <: Real)
@@ -68,7 +68,7 @@ immutable TransferFunction{T,S,U,V} <: LtiSystem{T,S}
     x.y = out
   end
 
-  function (sys::TransferFunction)(x::DEDataArray, dx::AbstractVector, u, i, j, idx)
+  function (sys::TransferFunction)(x::DiffEqBase.DEDataArray, dx::AbstractVector, u, i, j, idx)
     # @assert degree(nump) ≤ degree(denp)
     r     = sys.mat[i,j]
     nump  = num(r)
@@ -88,6 +88,10 @@ immutable TransferFunction{T,S,U,V} <: LtiSystem{T,S}
         dx[idx+k-1] += x.x[idx+k]
       end
       out += x.x[idx+1]
+      # take care of direct term
+      if db == da
+        dx[idx+(da:-1:1)] += -denp[0:end-1]*nump[end]*u[j]
+      end
     end
     out, da
   end
