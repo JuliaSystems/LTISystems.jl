@@ -141,11 +141,9 @@ include("types/response/nyquistresponse.jl")
 include("types/response/timeresponse.jl")
 
 # Methods
-include("methods/bode.jl")
 include("methods/feedback.jl")
 include("methods/freqresp.jl")
 include("methods/minreal.jl")
-include("methods/nyquist.jl")
 include("methods/parallel.jl")
 include("methods/pzmap.jl")
 include("methods/reduce.jl")
