@@ -7,6 +7,9 @@ using Compat
 
 # OrdinaryDiffEq
 using DiffEqBase, OrdinaryDiffEq
+@compat const DEDataVector{T} = isconst(DiffEqBase, :DEDataVector) ?
+                                DiffEqBase.DEDataVector{T} :
+                                DiffEqBase.DEDataArray{T}
 
 # PolynomialMatrices-related things
 using PolynomialMatrices
