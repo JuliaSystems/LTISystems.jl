@@ -13,7 +13,7 @@ function (::Type{SimType})(x::Vector, y::Vector, u::Vector)
 end
 
 function simulate{T}(sys::LtiSystem{Val{T},Val{:cont}}, tspan;
-  input = (t,x)->zeros(numinputs(sys)), alg::OrdinaryDiffEqAlgorithm = Tsit5(),
+  input = (t,x)->zeros(numinputs(sys)), alg::AbstractODEAlgorithm = Tsit5(),
   initial::AbstractVector = zeros(numstates(sys)), tstops = Float64[], kwargs...)
 
   f     = (t,x,dx)->sys(t,x,dx,input)

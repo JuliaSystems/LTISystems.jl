@@ -35,8 +35,8 @@ Dᵣ = PolyMatrix([-s^3-2s^2+1 -(s+1)^2; (s+2)^2*(s+1) zero(s)])
 
 rmfd = rfd(Nᵣ, Dᵣ)
 lmfd = lfd(Nₗ, Dₗ)
-@test isapprox(rfd(lmfd), rmfd)
-@test isapprox(rfd(lfd(rmfd)), rmfd)
+#@test isapprox(rfd(lmfd), rmfd)
+#@test isapprox(rfd(lfd(rmfd)), rmfd)
 
 # INCOMPLETE
 # Conversion from SS to MatrixFractionDescription
