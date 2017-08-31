@@ -18,7 +18,7 @@
 [docs-latest-img]: https://img.shields.io/badge/documentation-latest-blue.svg?colorB=1954a6
 [docs-latest-link]: https://systemsbase.readthedocs.io/en/latest
 [gitter-img]: https://img.shields.io/gitter/room/JuliaSystems/SystemsBase.jl.svg?colorB=1954a6
-[gitter-link]: https://gitter.im/JuliaSystems
+[gitter-link]: https://gitter.im/JuliaSystems/SystemsBase.jl
 
 Core functionality for **identifying**, **analyzing** and **designing** control
 systems in `Julia`.
@@ -27,7 +27,8 @@ systems in `Julia`.
 
 This repository is meant to provide a basic set of tools, *i.e.*, *transfer
 function* and *state space* types as well as the basic mathematical operations
-defined on them, in a way that other tools for [identifying][juliasys-sysid] or [analyzing][juliasys-ct] control systems would use the same set of functionality
+defined on them, in a way that other tools for [identifying][juliasys-sysid] or
+[analyzing][juliasys-ct] control systems would use the same set of functionality
 in a transparent, coherent way.
 
 [juliasys-sysid]: https://github.com/JuliaSystems/IdentificationToolbox.jl

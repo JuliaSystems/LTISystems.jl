@@ -100,6 +100,6 @@ statement in your commit message to disable testing.
 Instead of enhancing documentation in `SystemsBase`, you might be willing to create
 a tutorial showcasing the use of `Julia` and `SystemsBase` in control systems
 identification and analysis applications, you are more than welcome to contribute
-to our [tutorials repository][kth-ctj].
+to our [tutorials repository][js-ctj].
 
-[kth-ctj]: https://github.com/JuliaSystems/CTJ.git
+[js-ctj]: https://github.com/JuliaSystems/CTJ.git

@@ -2,5 +2,5 @@ coverage:
   notify:
     gitter:
       default:
-        url: "https://webhooks.gitter.im/e/dbd001528c200d10afaa"
+        url: "https://webhooks.gitter.im/e/dddb694d1f4dff87fcf4"
         threshold: 5%
