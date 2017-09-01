@@ -1,6 +1,6 @@
 __precompile__(true)
 
-module SystemsBase
+module LTISystems
 
 # Compatibility among different Julia versions
 using Compat

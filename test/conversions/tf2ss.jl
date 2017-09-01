@@ -13,9 +13,9 @@ truep = [-3.0, -1.0, -1.0]
 truez = [1.0]
 
 Pss = ss(Ptf)
-Plfd = lfd(SystemsBase._tf2lfd(Ptf)...)
+Plfd = lfd(LTISystems._tf2lfd(Ptf)...)
 Pss = ss(Plfd)
-Prfd = rfd(SystemsBase._tf2rfd(Ptf)...)
+Prfd = rfd(LTISystems._tf2rfd(Ptf)...)
 
 @test sort(poles(Pss), lt = (l,r)->real(l)<real(r)) ≈ sort(truep)
 @test zeros(Pss) ≈ truez
@@ -38,10 +38,10 @@ r34 = RationalFunction(2*Poly([34., 27., 5.], :s), poly([-1., -3., -5.], :s))
 
 Ptf = tf([r11 r12 r13 r14; r21 r22 r23 r24; r31 r32 r33 r34])
 
-Plfd = lfd(SystemsBase._tf2lfd(Ptf)...)
+Plfd = lfd(LTISystems._tf2lfd(Ptf)...)
 # ss(Plfd) # TODO find bug in _tf2lfd
 
-Prfd = rfd(SystemsBase._tf2rfd(Ptf)...)
+Prfd = rfd(LTISystems._tf2rfd(Ptf)...)
 ss(Prfd)
 
 poly(poles(ss(Ptf)), :s)  ≈ charpoly

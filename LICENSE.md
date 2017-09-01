@@ -1,4 +1,4 @@
-The SystemsBase.jl package is licensed under the Lesser GNU Public License,
+The LTISystems.jl package is licensed under the Lesser GNU Public License,
 Version 3.0+:
 
 > Copyright (c) 2016: Arda Aytekin (aytekin@kth.se), Niklas Everitt

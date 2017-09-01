@@ -1,4 +1,4 @@
-Welcome to SystemsBase.jl's documentation!
+Welcome to LTISystems.jl's documentation!
 ==========================================
 
 .. toctree::

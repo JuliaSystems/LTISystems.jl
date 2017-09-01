@@ -1,14 +1,14 @@
-# Contributing to SystemsBase
+# Contributing to LTISystems
 
 First, we would like to thank you for taking the time to contribute to
-`SystemsBase`.
+`LTISystems`.
 
 Below we will list, in ascending order of difficulty, some of the ways you can
-help us make `SystemsBase` a better package.
+help us make `LTISystems` a better package.
 
 ## Bug Reports and Feature Requests
 
-Probably the easiest way to contribute to `SystemsBase` is through reporting a
+Probably the easiest way to contribute to `LTISystems` is through reporting a
 bug or a lack of a feature you have noticed when using the package.
 
 Before reporting a bug or requesting a new feature, please note that we try to
@@ -23,8 +23,8 @@ should look like (hopefully with a small `Julia` code excerpt), how the **actual
 behaviour** looks like in the current implementation as well as some **proposals**
 and/or **references**, if you can find any, to help solve the issue.
 
-[js-kanban]: https://github.com/JuliaSystems/SystemsBase.jl/projects/1
-[new-issue]: https://github.com/JuliaSystems/SystemsBase.jl/issues/new
+[js-kanban]: https://github.com/JuliaSystems/LTISystems.jl/projects/1
+[new-issue]: https://github.com/JuliaSystems/LTISystems.jl/issues/new
 
 ## Pull Requests
 
@@ -69,15 +69,15 @@ behind them. Using the `Fixes #issue_number.` in the end is useful to close the
 corresponding issue automatically upon a successful merge.
 
 [conv-devel]: https://youtu.be/iV7mVGPXrxU?t=16m25s
-[js-fork]: https://github.com/JuliaSystems/SystemsBase.jl/fork
-[js-pull]: https://github.com/JuliaSystems/SystemsBase.jl/pull/new/master
+[js-fork]: https://github.com/JuliaSystems/LTISystems.jl/fork
+[js-pull]: https://github.com/JuliaSystems/LTISystems.jl/pull/new/master
 
 ### Documentation Enhancements
 
 A relatively easy way to contribute via a pull request is through writing missing
 documentation elements or improving already available ones.
 
-Mainly, we have two different places for our documentation in `SystemsBase`:
+Mainly, we have two different places for our documentation in `LTISystems`:
 
 1.  Code documentation in `Julia`. This is what `Julia` uses to show help to users
     issuing a `?command_name`. We try to follow the documentation
@@ -87,18 +87,18 @@ Mainly, we have two different places for our documentation in `SystemsBase`:
     for this purpose and keep all the documentation related files under the `doc/`
     folder.
 
-If you choose to contribute to `SystemsBase` through documentation enhancements,
+If you choose to contribute to `LTISystems` through documentation enhancements,
 you can follow steps 1, 2, 3 and 5 above, and you can write a `[ci-skip]`
 statement in your commit message to disable testing.
 
 [julia-doc]: http://docs.julialang.org/en/latest/manual/documentation/
-[js-rtfd]: http://systemsbase.rtfd.io/
+[js-rtfd]: http://ltisystems.rtfd.io/
 [rst-doc]: http://docutils.sourceforge.net/docs/user/rst/quickref.html
 
 ### Proposing Tutorials and Walkthroughs
 
-Instead of enhancing documentation in `SystemsBase`, you might be willing to create
-a tutorial showcasing the use of `Julia` and `SystemsBase` in control systems
+Instead of enhancing documentation in `LTISystems`, you might be willing to create
+a tutorial showcasing the use of `Julia` and `LTISystems` in control systems
 identification and analysis applications, you are more than welcome to contribute
 to our [tutorials repository][js-ctj].
 

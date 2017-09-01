@@ -2,7 +2,7 @@ using Polynomials
 using RationalFunctions
 using PolynomialMatrices
 
-using SystemsBase
+using LTISystems
 
 using Base.Test
 using Base.Test.@testset

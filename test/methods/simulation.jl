@@ -1,5 +1,5 @@
 type TestSystem{M1,M2}
-  v::Vector{SystemsBase.LtiSystem}
+  v::Vector{LTISystems.LtiSystem}
   sol::M1
   input::M2
   function (::Type{TestSystem})(v,sol,input)
@@ -25,7 +25,7 @@ end
 
 # first continous system
 # s1 = 1/(s+2) step response 1/2 - 1/2*exp(-2t)
-c1v = Vector{SystemsBase.LtiSystem}(0)
+c1v = Vector{LTISystems.LtiSystem}(0)
 push!(c1v, tf([1],[1, 2]))
 push!(c1v, lfd([1], [1, 2]))
 push!(c1v, rfd([1], [1, 2]))
@@ -171,7 +171,7 @@ a = 0.2
 d1sol = t->fores(t,b,a)
 d1inp = Signals.Step([0.], [1.], [0.])
 
-d1v = Vector{SystemsBase.LtiSystem}(0)
+d1v = Vector{LTISystems.LtiSystem}(0)
 push!(d1v, tf([b],[1, -a], 1))
 push!(d1v, lfd([b],[1, -a], 1))
 push!(d1v, rfd([b],[1, -a], 1))
