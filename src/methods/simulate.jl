@@ -16,7 +16,7 @@ function simulate{T}(sys::LtiSystem{Val{T},Val{:cont}}, tspan;
   input = (t,x)->zeros(numinputs(sys)), alg::AbstractODEAlgorithm = Tsit5(),
   initial::AbstractVector = zeros(numstates(sys)), tstops = Float64[], kwargs...)
 
-  f     = (t,x,dx)->sys(t,x,dx,input)
+  f     = (dx,x,p,t)->sys(t,x,dx,input)
   simvar= SimType(initial, zeros(numoutputs(sys)), zeros(numinputs(sys)))
   f(tspan[1], simvar, zeros(initial))
 
@@ -41,7 +41,7 @@ function simulate{T}(sys::LtiSystem{Val{T},Val{:disc}}, tspan;
   input = (t,x)->zeros(numinputs(sys)),
   initial::AbstractVector = zeros(numstates(sys)), kwargs...)
 
-  f      = (t,x,dx)->sys(t,x,dx,input)
+  f      = (dx,x,p,t)->sys(t,x,dx,input)
   simvar = SimType(initial, zeros(numoutputs(sys)), zeros(numinputs(sys)))
   temp   = zeros(simvar.x)
   f(0.0, simvar, temp)  # ensure first step is correct
