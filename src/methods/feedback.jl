@@ -18,18 +18,18 @@ Continuous time rational transfer function model
 x^2 + 4x + 7
 ```
 """
-function feedback{T1<:LtiSystem, T2<:LtiSystem}(s1::T1, s2::T2)
+function feedback(s1::T1, s2::T2) where {T1<:LtiSystem, T2<:LtiSystem}
   /(s1, parallel(one(s1), series(s1,s2)))
 end
 
-feedback{T1<:LtiSystem, T2<:Real}(s1::T1, n::T2) =
+feedback(s1::T1, n::T2) where {T1<:LtiSystem, T2<:Real} =
   /(s1, parallel(one(s1), series(s1, n)))
-feedback{T1<:LtiSystem, T2<:Real}(n::T2, s1::T1) =
+feedback(n::T2, s1::T1) where {T1<:LtiSystem, T2<:Real} =
   /(n, parallel(one(s1), series(n, s1)))
 
-feedback{T1<:LtiSystem, T2<:Real}(s1::T1, n::Matrix{T2}) =
+feedback(s1::T1, n::Matrix{T2}) where {T1<:LtiSystem, T2<:Real} =
   /(s1, parallel(one(s1), series(s1, n)))
-feedback{T1<:LtiSystem, T2<:Real}(n::Matrix{T2}, s1::T1) =
+feedback(n::Matrix{T2}, s1::T1) where {T1<:LtiSystem, T2<:Real} =
   /(n, parallel(one(s1), series(n, s1)))
 
 # # TODO: Implement the specific cases for speedup purposes. Take into account the

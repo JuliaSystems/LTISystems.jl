@@ -1,10 +1,10 @@
-immutable PZData{T}
-  p::Vector{Complex128}
-  z::Vector{Complex128}
+struct PZData{T}
+  p::Vector{Complex{Float64}}
+  z::Vector{Complex{Float64}}
 
-  function (::Type{PZData{Val{U}}}){T<:Number,S<:Number,U}(p::AbstractVector{T},
-    z::AbstractVector{S})
-    new{Val{U}}(convert(Vector{Complex128}, p), convert(Vector{Complex128}, z))
+  function (::Type{PZData{Val{U}}})(p::AbstractVector{T},
+    z::AbstractVector{S}) where {T<:Number,S<:Number,U}
+    new{Val{U}}(convert(Vector{Complex{Float64}}, p), convert(Vector{Complex{Float64}}, z))
   end
 end
 
@@ -37,7 +37,7 @@ However, plotting recipes are defined for `pzdata`, which allows for
 
 **See also:** `poles`, `zeros`, `tzeros`.
 """
-pzmap{T,S}(sys::LtiSystem{Val{T},Val{S}}) = PZData{Val{S}}(_pzmap(sys)...)
+pzmap(sys::LtiSystem{Val{T},Val{S}}) where {T,S} = PZData{Val{S}}(_pzmap(sys)...)
 
 @recipe function f{T}(pzdata::PZData{Val{T}}; stability = true)
   @assert isa(stability, Bool) "plot(pzdata): `stability` must be a `Bool`"

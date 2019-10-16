@@ -31,7 +31,7 @@ import Base: convert, promote_rule
 import Base: one, zero
 
 # Import num, den for getting numerator and denominator polynomials
-import Base: num, den
+import Base: numerator, denominator
 
 # Import inv and zeros
 import Base: inv, zeros

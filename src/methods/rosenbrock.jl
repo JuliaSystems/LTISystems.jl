@@ -59,8 +59,7 @@ julia> Cc = C*Tc; Dc = D;
 -  [2]: H.H. Rosenbrock, State-Space and Multivariable Theory. London: Thomas
         Nelson and Sons, 1970.
 """
-function rosenbrock{M1<:AbstractMatrix,M2<:AbstractMatrix}(A::M1, B::M2,
-  tol::Float64 = zero(Float64))
+function rosenbrock(A::M1, B::M2, tol::Float64 = zero(Float64)) where {M1<:AbstractMatrix,M2<:AbstractMatrix}
   n1, n2  = size(A,1,2)
   n3, n4  = size(B,1,2)
   @assert n1 == n2 "rosenbrock: A must be square"

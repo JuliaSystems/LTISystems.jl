@@ -1,5 +1,5 @@
-function reduce{M1<:AbstractMatrix, M2<:AbstractMatrix, M3<:AbstractMatrix,
-  M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, tol::Float64 = zero(Float64))
+function reduce(A::M1, B::M2, C::M3, D::M4, tol::Float64 = zero(Float64)) where {M1<:AbstractMatrix, M2<:AbstractMatrix, M3<:AbstractMatrix,
+  M4<:AbstractMatrix}
   @assert size(A,1) == size(A,2) "reduce: A must be square"
   @assert size(A,1) == size(B,1) "reduce: A and B must have the same row size"
   @assert size(A,1) == size(C,2) "reduce: A and C must have the same column size"

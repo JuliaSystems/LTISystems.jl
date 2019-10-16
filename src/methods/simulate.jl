@@ -1,7 +1,7 @@
 # TODO: For now, keep SimType{T} in `dense` format. Later on, think of relaxing
 #       this thing, *i.e.*, SimType{T<:Real,V1<:AbstractVector{T},etc.}.
 
-type SimType{T<:Real} <: DEDataVector{T}
+mutable struct SimType{T<:Real} <: DEDataVector{T}
   x::Vector{T}
   y::Vector{T}
   u::Vector{T}
@@ -12,9 +12,9 @@ function (::Type{SimType})(x::Vector, y::Vector, u::Vector)
   SimType(convert(Vector{T}, x), convert(Vector{T}, y), convert(Vector{T}, u))
 end
 
-function simulate{T}(sys::LtiSystem{Val{T},Val{:cont}}, tspan;
-  input = (t,x)->zeros(numinputs(sys)), alg::AbstractODEAlgorithm = Tsit5(),
-  initial::AbstractVector = zeros(numstates(sys)), tstops = Float64[], kwargs...)
+function simulate(sys::LtiSystem{Val{T},Val{:cont}}, tspan;
+  input = (t,x)->zeros(numinputs(sys)), alg::DiffEqBase.AbstractODEAlgorithm = Tsit5(),
+  initial::AbstractVector = zeros(numstates(sys)), tstops = Float64[], kwargs...) where {T}
 
   f     = (t,x,dx)->sys(t,x,dx,input)
   simvar= SimType(initial, zeros(numoutputs(sys)), zeros(numinputs(sys)))
@@ -37,9 +37,9 @@ function simulate{T}(sys::LtiSystem{Val{T},Val{:cont}}, tspan;
   TimeResponse(tvals,xvals,yvals,uvals)
 end
 
-function simulate{T}(sys::LtiSystem{Val{T},Val{:disc}}, tspan;
+function simulate(sys::LtiSystem{Val{T},Val{:disc}}, tspan;
   input = (t,x)->zeros(numinputs(sys)),
-  initial::AbstractVector = zeros(numstates(sys)), kwargs...)
+  initial::AbstractVector = zeros(numstates(sys)), kwargs...) where {T}
 
   f      = (t,x,dx)->sys(t,x,dx,input)
   simvar = SimType(initial, zeros(numoutputs(sys)), zeros(numinputs(sys)))
