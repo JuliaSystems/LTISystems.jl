@@ -1,13 +1,13 @@
-immutable Square{T,N} <: AbstractSignal{T,N}
+struct Square{T,N} <: AbstractSignal{T,N}
   magnitude::Vector{T}
   width::Vector{T}
   dc::Vector{T}
   shift::Vector{T}
   period::Vector{T}
 
-  function (::Type{Square}){T1,T2,T3,T4,T5}(mag::Vector{T1},
+  function (::Type{Square})(mag::Vector{T1},
     width::Vector{T2} = ones(mag), dc::Vector{T3} = zeros(mag),
-    shift::Vector{T4} = zeros(mag), per::Vector{T5} = width)
+    shift::Vector{T4} = zeros(mag), per::Vector{T5} = width) where {T1,T2,T3,T4,T5}
     if !(length(mag) == length(width) == length(dc) == length(shift) == length(per))
       warn("Square(mag, width, dc, shift, per): all inputs must have the same lengths")
       throw(DomainError())
@@ -30,7 +30,7 @@ immutable Square{T,N} <: AbstractSignal{T,N}
     [shift], [per])
   (::Type{Square})() = Square(1.)
 
-  function (s::Square{T}){T}(t::Real, x = nothing)
+  function (s::Square{T})(t::Real, x = nothing) where {T}
     res   = divrem.(t - s.shift, s.period)
     tnorm = map(y->y[2], res)
     [(t < zero(t)) ? dc : (t < 0.5w) ? dc + m : (t < w) ? dc - m : dc for
@@ -38,7 +38,7 @@ immutable Square{T,N} <: AbstractSignal{T,N}
   end
 end
 
-function discontinuities{T1<:Real,T2<:Real,T3<:Real}(s::Square{T1}, tspan::Tuple{T2,T3})
+function discontinuities(s::Square{T1}, tspan::Tuple{T2,T3}) where {T1<:Real,T2<:Real,T3<:Real}
   tstops = Set{T1}()
 
   for i1 in 1:length(s.period)
@@ -62,8 +62,8 @@ function discontinuities{T1<:Real,T2<:Real,T3<:Real}(s::Square{T1}, tspan::Tuple
   [tstop for tstop in tstops if tspan[1] ≤ tstop ≤ tspan[2]]
 end
 
-convert{T,N}(::Type{AbstractSignal{T,N}}, s::Square{T,N})       = s
-convert{T1,T2,N}(::Type{AbstractSignal{T1,N}}, s::Square{T2,N}) =
+convert(::Type{AbstractSignal{T,N}}, s::Square{T,N}) where {T,N} = s
+convert(::Type{AbstractSignal{T1,N}}, s::Square{T2,N}) where {T1,T2,N} =
   Square(convert(Vector{T1}, s.magnitude), convert(Vector{T1}, s.width),
     convert(Vector{T1}, s.dc), convert(Vector{T1}, s.shift),
     convert(Vector{T1}, s.period))
@@ -72,11 +72,11 @@ convert{T1,T2,N}(::Type{AbstractSignal{T1,N}}, s::Square{T2,N}) =
 
 # Relation between `Real`s
 
-+{T<:Real}(x::Union{T,AbstractVector{T}}, s::Square)  =
++(x::Union{T,AbstractVector{T}}, s::Square) where {T<:Real} =
   Square(s.magnitude, s.width, s.dc + x, s.shift, s.period)
-+{T<:Real}(s::Square, x::Union{T,AbstractVector{T}})  = +(x,  r)
--{T<:Real}(x::Union{T,AbstractVector{T}}, s::Square)  = +(x, -r)
--{T<:Real}(s::Square, x::Union{T,AbstractVector{T}})  = +(r, -x)
++(s::Square, x::Union{T,AbstractVector{T}}) where {T<:Real} = +(x,  r)
+-(x::Union{T,AbstractVector{T}}, s::Square) where {T<:Real} = +(x, -r)
+-(s::Square, x::Union{T,AbstractVector{T}}) where {T<:Real} = +(r, -x)
 
 *(x::Real, s::Square) = Square(x*s.magnitude, s.width, x*s.dc, s.shift, s.period)
 *(s::Square, x::Real) = *(x,   r)

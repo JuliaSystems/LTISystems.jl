@@ -1,7 +1,7 @@
-immutable SumOfSignals{T,N} <: AbstractSignal{T,N}
+struct SumOfSignals{T,N} <: AbstractSignal{T,N}
   signals::Vector{AbstractSignal{T,N}}
 
-  function (::Type{SumOfSignals}){T1<:AbstractSignal}(signals::Vector{T1})
+  function (::Type{SumOfSignals})(signals::Vector{T1}) where {T1<:AbstractSignal}
     if isempty(signals)
       warn("SumOfSignals(signals): `signals` is empty")
       throw(DomainError())
@@ -23,7 +23,7 @@ immutable SumOfSignals{T,N} <: AbstractSignal{T,N}
     SumOfSignals(signals)
   end
 
-  function (sos::SumOfSignals{T,N}){T,N}(t::Real, x = nothing)
+  function (sos::SumOfSignals{T,N})(t::Real, x = nothing) where {T,N}
     temp = zeros(T,N)
     for signal in sos.signals
       temp += signal(t, x)
@@ -32,8 +32,8 @@ immutable SumOfSignals{T,N} <: AbstractSignal{T,N}
   end
 end
 
-function discontinuities{T1,T2<:Real,T3<:Real}(sos::SumOfSignals{T1},
-  tspan::Tuple{T2,T3})
+function discontinuities(sos::SumOfSignals{T1},
+  tspan::Tuple{T2,T3}) where {T1,T2<:Real,T3<:Real}
   tstops = Set{T1}()
   for signal in sos.signals
     push!(tstops, discontinuities(signal, tspan)...)
@@ -41,21 +41,21 @@ function discontinuities{T1,T2<:Real,T3<:Real}(sos::SumOfSignals{T1},
   [tstop for tstop in tstops]
 end
 
-convert{T,N}(::Type{AbstractSignal{T,N}}, sos::SumOfSignals{T,N})       = sos
-convert{T1,T2,N}(::Type{AbstractSignal{T1,N}}, sos::SumOfSignals{T2,N}) =
+convert(::Type{AbstractSignal{T,N}}, sos::SumOfSignals{T,N}) where {T,N}       = sos
+convert(::Type{AbstractSignal{T1,N}}, sos::SumOfSignals{T2,N}) where {T1,T2,N} =
   SumOfSignals(convert(Vector{AbstractSignal{T1,N}}, sos.signals))
 
 -(sos::SumOfSignals) = SumOfSignals(-signals)
 
 # Relation between `Real`s
 
-function +{T<:Real}(x::Union{T,AbstractVector{T}}, sos::SumOfSignals)
+function +(x::Union{T,AbstractVector{T}}, sos::SumOfSignals) where {T<:Real}
   temp = [signal + x for signal in sos.signals]
   SumOfSignals(temp)
 end
-+{T<:Real}(sos::SumOfSignals, x::Union{T,AbstractVector{T}}) = +(x,  sos)
--{T<:Real}(x::Union{T,AbstractVector{T}}, sos::SumOfSignals) = +(x, -sos)
--{T<:Real}(sos::SumOfSignals, x::Union{T,AbstractVector{T}}) = +(sos, -x)
++(sos::SumOfSignals, x::Union{T,AbstractVector{T}}) where {T<:Real} = +(x,  sos)
+-(x::Union{T,AbstractVector{T}}, sos::SumOfSignals) where {T<:Real} = +(x, -sos)
+-(sos::SumOfSignals, x::Union{T,AbstractVector{T}}) where {T<:Real} = +(sos, -x)
 
 function *(x::Real, sos::SumOfSignals)
   temp = [x*signal for signal in sos.signals]
@@ -66,15 +66,15 @@ end
 
 # Relationship between `AbstractSignal`s
 
-+{T1,T2,N}(sos::SumOfSignals{T1,N}, s::AbstractSignal{T2,N}) =
++(sos::SumOfSignals{T1,N}, s::AbstractSignal{T2,N}) where {T1,T2,N} =
   SumOfSignals(push!(copy(sos.signals), s))
-+{T1,T2,N}(s::AbstractSignal{T2,N}, sos::SumOfSignals{T1,N}) = +(sos,  s)
--{T1,T2,N}(s::AbstractSignal{T2,N}, sos::SumOfSignals{T1,N}) = +(s, -sos)
--{T1,T2,N}(sos::SumOfSignals{T1,N}, s::AbstractSignal{T2,N}) = +(sos, -s)
++(s::AbstractSignal{T2,N}, sos::SumOfSignals{T1,N}) where {T1,T2,N} = +(sos,  s)
+-(s::AbstractSignal{T2,N}, sos::SumOfSignals{T1,N}) where {T1,T2,N} = +(s, -sos)
+-(sos::SumOfSignals{T1,N}, s::AbstractSignal{T2,N}) where {T1,T2,N} = +(sos, -s)
 
 # Relationship among `SumOfSignals`
 
-+{T1,T2,N}(sos1::SumOfSignals{T1,N}, sos2::SumOfSignals{T2,N}) =
++(sos1::SumOfSignals{T1,N}, sos2::SumOfSignals{T2,N}) where {T1,T2,N} =
   SumOfSignals(AbstractSignal{promote_type(T1,T2),N}[sos1.signals..., sos2.signals...])
--{T1,T2,N}(sos1::SumOfSignals{T1,N}, sos2::SumOfSignals{T2,N}) =
+-(sos1::SumOfSignals{T1,N}, sos2::SumOfSignals{T2,N}) where {T1,T2,N} =
   SumOfSignals(AbstractSignal{promote_type(T1,T2),N}[sos1.signals..., -sos2.signals...])
