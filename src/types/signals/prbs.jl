@@ -1,11 +1,10 @@
-immutable PRBS{T,N,S1,S2} <: AbstractSignal{T,N}
+struct PRBS{T,N,S1,S2} <: AbstractSignal{T,N}
   mag::Vector{T}
   dc::Vector{T}
   internal::Vector{Tuple{S1,S1,S1,S1}}
 
-  function (::Type{PRBS}){T1<:Real,T2<:Real,T3<:Integer,N}(mag::Vector{T1},
-    dc::Vector{T2} = zeros(mag), seed::Vector{T3} = ones(Int, dc),
-    ::Type{Val{N}} = Val{7})
+  function (::Type{PRBS})(mag::Vector{T1}, dc::Vector{T2} = zeros(mag), seed::Vector{T3} = ones(Int, dc),
+    ::Type{Val{N}} = Val{7}) where {T1<:Real,T2<:Real,T3<:Integer,N}
     if !(length(mag) == length(dc) == length(seed))
       warn("PRBS(mag, dc, seed, Val{N}): `mag`, `dc` and `seed` must all have the same lengths")
       throw(DomainError())
@@ -26,8 +25,8 @@ immutable PRBS{T,N,S1,S2} <: AbstractSignal{T,N}
       internal)
   end
 
-  function (::Type{PRBS}){T1<:Real,T2<:Real,S1<:Integer,N}(mag::Vector{T1},
-    dc::Vector{T2}, internal::Vector{Tuple{S1,S1,S1,S1}}, ::Type{Val{N}})
+  function (::Type{PRBS})(mag::Vector{T1}, dc::Vector{T2},
+    internal::Vector{Tuple{S1,S1,S1,S1}}, ::Type{Val{N}}) where {T1<:Real,T2<:Real,S1<:Integer,N}
     if !(length(mag) == length(dc) == length(internal))
       warn("PRBS(mag, dc, internal, Val{N}): `mag`, `dc` and `internal` must all have the same lengths")
       throw(DomainError())
@@ -50,11 +49,11 @@ immutable PRBS{T,N,S1,S2} <: AbstractSignal{T,N}
     new{T,length(internal),S1,Val{N}}(convert(Vector{T}, mag), convert(Vector{T}, dc), internal)
   end
 
-  (::Type{PRBS}){N}(mag::Real, dc::Real = zero(mag), seed::Integer = 1,
-    t::Type{Val{N}} = Val{7}) = PRBS([mag], [dc], [seed], t)
+  (::Type{PRBS})(mag::Real, dc::Real = zero(mag), seed::Integer = 1,
+    t::Type{Val{N}} = Val{7}) where {N} = PRBS([mag], [dc], [seed], t)
   (::Type{PRBS})() = PRBS(1.)
 
-  function (p::PRBS{T,N,S1}){T,N,S1}()
+  function (p::PRBS{T,N,S1})() where {T,N,S1}
     temp = zeros(S1, N)
     for idx in 1:length(p.internal)
       a, b, val, _    = p.internal[idx]
@@ -66,7 +65,7 @@ immutable PRBS{T,N,S1,S2} <: AbstractSignal{T,N}
     temp
   end
 
-  function (p::PRBS{T,N,S1,Val{S2}}){T,N,S1,S2}(t::Real, x = nothing)
+  function (p::PRBS{T,N,S1,Val{S2}})(t::Real, x = nothing) where {T,N,S1,S2}
     temp  = zeros(Bool, N)
     for idx in 1:length(temp)
       a, b, val, k = p.internal[idx]
@@ -106,20 +105,20 @@ _coeffs(::Type{Val{31}})  = (30 , 27)
 # discontinuities{T1<:Real,T2<:Real}(p::PRBS, tspan::Tuple{T1,T2}) =
 #   promote_type(T1, T2)[]
 
-convert{T,N,S1,S2}(::Type{AbstractSignal{T,N}}, p::PRBS{T,N,S1,Val{S2}})        = p
-convert{T1,T2,N,S1,S2}(::Type{AbstractSignal{T1,N}}, p::PRBS{T2,N,S1,Val{S2}})  =
+convert(::Type{AbstractSignal{T,N}}, p::PRBS{T,N,S1,Val{S2}}) where {T,N,S1,S2} = p
+convert(::Type{AbstractSignal{T1,N}}, p::PRBS{T2,N,S1,Val{S2}}) where {T1,T2,N,S1,S2} =
   PRBS(convert(Vector{T1}, p.mag), convert(Vector{T1}, p.dc), internal, Val{S2})
 
--{T,N,S1,S2}(p::PRBS{T,N,S1,Val{S2}}) = PRBS(-p.mag, -p.dc, p.internal, Val{S2})
+-(p::PRBS{T,N,S1,Val{S2}}) where {T,N,S1,S2} = PRBS(-p.mag, -p.dc, p.internal, Val{S2})
 
 # Relation between `Real`s
 
-+{T1<:Real,T2,N,S1,S2}(x::Union{T1,AbstractVector{T1}}, p::PRBS{T2,N,S1,Val{S2}}) =
++(x::Union{T1,AbstractVector{T1}}, p::PRBS{T2,N,S1,Val{S2}}) where {T1<:Real,T2,N,S1,S2} =
   PRBS(p.mag, p.dc + x, p.internal, Val{S2})
-+{T<:Real}(p::PRBS, x::Union{T,AbstractVector{T}})  = +(x,  p)
--{T<:Real}(x::Union{T,AbstractVector{T}}, p::PRBS)  = +(x, -p)
--{T<:Real}(p::PRBS, x::Union{T,AbstractVector{T}})  = +(p, -x)
++(p::PRBS, x::Union{T,AbstractVector{T}}) where {T<:Real} = +(x,  p)
+-(x::Union{T,AbstractVector{T}}, p::PRBS) where {T<:Real} = +(x, -p)
+-(p::PRBS, x::Union{T,AbstractVector{T}}) where {T<:Real} = +(p, -x)
 
-*{T,N,S1,S2}(x::Real, p::PRBS{T,N,S1,Val{S2}}) = PRBS(x*p.mag, x*p.dc, p.internal, Val{S2})
+*(x::Real, p::PRBS{T,N,S1,Val{S2}}) where {T,N,S1,S2} = PRBS(x*p.mag, x*p.dc, p.internal, Val{S2})
 *(p::PRBS, x::Real) = *(x,   p)
 /(p::PRBS, x::Real) = *(p, 1/x)
