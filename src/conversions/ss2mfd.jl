@@ -1,6 +1,6 @@
 # Generates a right MatrixFractionDescription whose transfer function coincides with that
 # of an observable state-space model.
-function _ss2rfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
+function _ss2rfd(sys::StateSpace{Val{T},Val{S}}, var::Symbol) where {T,S}
   n     = numstates(sys)
   nu    = numinputs(sys)
   ny    = numoutputs(sys)
@@ -33,7 +33,7 @@ rfd(sys::StateSpace{Val{:mimo},Val{:cont}})  =
 rfd(sys::StateSpace{Val{:mimo},Val{:disc}}) =
   rfd(_ss2rfd(sys,:z)...,samplingtime(sys))
 
-function _ss2lfd{T,S}(sys::StateSpace{Val{T},Val{S}}, var::Symbol)
+function _ss2lfd(sys::StateSpace{Val{T},Val{S}}, var::Symbol) where {T,S}
   n     = numstates(sys)
   nu    = numinputs(sys)
   ny    = numoutputs(sys)
@@ -64,5 +64,5 @@ lfd(sys::StateSpace{Val{:mimo},Val{:cont}})  =
 lfd(sys::StateSpace{Val{:mimo},Val{:disc}}) =
   lfd(_ss2lfd(sys,:z)...,samplingtime(sys))
 
-_pmvaltype{T}(s::LtiSystem{Val{T},Val{:cont}}) = :s
-_pmvaltype{T}(s::LtiSystem{Val{T},Val{:disc}}) = :z
+_pmvaltype(s::LtiSystem{Val{T},Val{:cont}}) where {T} = :s
+_pmvaltype(s::LtiSystem{Val{T},Val{:disc}}) where {T} = :z

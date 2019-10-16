@@ -9,7 +9,7 @@
 # s = R(s)*inv(D(s)) where D(s) is diagonal with the product of all denominators
 # of column i in D[i,i]
 # R[i,j] is num(s[i,j]) times all denominators in den(s[:,j]) except den(s[i,j])
-function _tf2rfd(s::LTISystems.TransferFunction)
+function _tf2rfd(s::TransferFunction)
   mat = s.mat
   n,m = size(mat)
   dp  = fill(zero(den(mat[1])), m)
@@ -32,7 +32,7 @@ end
 # s = inv(D(s))*R(s) where D(s) is diagonal with the product of all denominators
 # of column i in D[i,i]
 # R[i,j] is num(s[i,j]) times all denominators in den(s[j,:]) except den(s[i,j])
-function _tf2lfd(s::LTISystems.TransferFunction)
+function _tf2lfd(s::TransferFunction)
   mat = s.mat
   n,m = size(mat)
   dp  = fill(zero(den(mat[1])), n)
