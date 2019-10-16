@@ -1,10 +1,10 @@
-immutable NyquistResponse{T<:Real} <: SystemResponse
+struct NyquistResponse{T<:Real} <: SystemResponse
   freqs::Vector{T}  # rad/sec
   real::Array{T,3}   # -
   imag::Array{T,3} # -
 
-  function (::Type{NyquistResponse}){T1<:Real,T2<:Real,T3<:Real}(
-    freqs::AbstractVector{T1}, real::AbstractArray{T2,3}, imag::AbstractArray{T3,3})
+  function (::Type{NyquistResponse})(freqs::AbstractVector{T1}, real::AbstractArray{T2,3},
+    imag::AbstractArray{T3,3}) where {T1<:Real,T2<:Real,T3<:Real}
     if size(real) ≠ size(imag)
       warn("NyquistResponse(freqs, real, imag): `real` and `imag` must have same dimensions")
       throw(DomainError())
@@ -19,9 +19,9 @@ immutable NyquistResponse{T<:Real} <: SystemResponse
   end
 end
 
-_nyquist{T<:Real}(sys::LtiSystem{Val{:siso}}, ω::AbstractVector{T})  =
+_nyquist(sys::LtiSystem{Val{:siso}}, ω::AbstractVector{T}) where {T<:Real} =
   reshape(freqresp(sys, ω), size(sys)..., length(ω))
-_nyquist{T<:Real}(sys::LtiSystem{Val{:mimo}}, ω::AbstractVector{T})  =
+_nyquist(sys::LtiSystem{Val{:mimo}}, ω::AbstractVector{T}) where {T<:Real} =
   freqresp(sys, ω)
 
 """
@@ -51,13 +51,13 @@ when `using Plots`.
 
 **See also:** `freqresp`, `bode`.
 """
-function nyquist{T}(sys::LtiSystem, ω::AbstractVector{T})
+function nyquist(sys::LtiSystem, ω::AbstractVector{T}) where {T}
   # TODO: should we check for ω ≥ 0 ?
   fr = _nyquist(sys, ω)
   NyquistResponse(ω, real(fr), imag(fr))
 end
 
-nyquist{T}(sys::LtiSystem{Val{T},Val{:disc}}) =
+nyquist(sys::LtiSystem{Val{T},Val{:disc}}) where {T} =
   nyquist(sys, logspace(-6, log10(π/samplingtime(sys)), 1000))
 
 @recipe function f(nr::NyquistResponse; iopairs = Tuple{Int,Int}[], freqs = :rads,
@@ -151,25 +151,25 @@ nyquist{T}(sys::LtiSystem{Val{T},Val{:disc}}) =
 end
 
 # args specified in degrees
-function _iso_phases{T1<:Real,T2<:Real}(args::AbstractVector{T1},
-  w::AbstractVector{T2}=linspace(0, 2π, 200))
+function _iso_phases(args::AbstractVector{T1},
+  w::AbstractVector{T2}=linspace(0, 2π, 200)) where {T1<:Real,T2<:Real}
 
   N = tan(args*π/180)
   radius = sqrt(1+N.^2)./2N
   xc = -1/2
-  yc = 1./2N
+  yc = 1/2N
 
   c = cos(w)
   s = sin(w)
 
-  reals = xc*ones(c*radius.') + c*radius.'
-  imags = ones(s)*yc.' + s*radius.'
+  reals = xc*ones(c*transpose(radius)) + c*transpose(radius)
+  imags = ones(s)*transpose(yc) + s*transpose(radius)
   reals, imags
 end
 
 # modules specified in db
-function _iso_modules{T1<:Real,T2<:Real}(modules::AbstractVector{T1},
-  w::AbstractVector{T2}=linspace(0, 2π, 200))
+function _iso_modules(modules::AbstractVector{T1},
+  w::AbstractVector{T2}=linspace(0, 2π, 200)) where {T1<:Real,T2<:Real}
 
   M = exp10(modules/20)
   abs2(M)
@@ -181,7 +181,7 @@ function _iso_modules{T1<:Real,T2<:Real}(modules::AbstractVector{T1},
   c = cos(w)
   s = sin(w)
 
-  reals = ones(c)*xc.' + c*radius.'
-  imags = yc*ones(s*radius.') + s*radius.'
+  reals = ones(c)*transpose(xc) + c*transpose(radius)
+  imags = yc*ones(s*transpose(radius)) + s*transpose(radius)
   reals, imags
 end
