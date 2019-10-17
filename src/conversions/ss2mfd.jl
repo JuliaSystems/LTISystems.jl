@@ -6,7 +6,7 @@ function _ss2rfd(sys::StateSpace{Val{T},Val{S}}, var::Symbol) where {T,S}
   ny    = numoutputs(sys)
 
   # Construct system matrix (Rosenbrock, 1970)
-  Dₗ    = PolyMatrix(vcat(sys.A, -eye(sys.A)), (n,n), Val{_pmvaltype(sys)})
+  Dₗ    = PolyMatrix(vcat(sys.A, -I(sys.A)), (n,n), Val{_pmvaltype(sys)})
   Nₗ    = PolyMatrix(sys.B, (n,nu), Val{_pmvaltype(sys)})
 
   # Write (sI-A)^{-1} B as a left MatrixFractionDescription and convert to right MatrixFractionDescription
@@ -39,7 +39,7 @@ function _ss2lfd(sys::StateSpace{Val{T},Val{S}}, var::Symbol) where {T,S}
   ny    = numoutputs(sys)
 
   # Construct system matrix (Rosenbrock, 1970)
-  Dᵣ    = PolyMatrix(vcat(-sys.A, eye(sys.A)), (n,n), Val{_pmvaltype(sys)})
+  Dᵣ    = PolyMatrix(vcat(-sys.A, I(sys.A)), (n,n), Val{_pmvaltype(sys)})
   Nᵣ    = PolyMatrix(sys.C, (ny,n), Val{_pmvaltype(sys)})
   # Write C(sI-A)^{-1} as a right MatrixFractionDescription and convert to left MatrixFractionDescription
   R,U   = rtriang(vcat(-Dᵣ, Nᵣ))

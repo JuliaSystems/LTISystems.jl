@@ -1,4 +1,4 @@
-__precompile__(true)
+#__precompile__(true)
 
 module LTISystems
 
@@ -16,6 +16,9 @@ using PolynomialMatrices
 
 # Polynomials-related things
 using Polynomials
+
+# Linear Algebra related things
+using LinearAlgebra
 
 # RationalFunctions-related things
 using RationalFunctions
@@ -49,7 +52,7 @@ import Base: summary
 import Base: step
 
 # Import mathematical operations for overloading
-import Base: +, .+, -, .-, *, .*, /, ./, ==, !=, isapprox, transpose
+import Base: +, -, *, /, ==, !=, isapprox, transpose
 
 # Export only the useful functions
 export

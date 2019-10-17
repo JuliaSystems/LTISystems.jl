@@ -1,4 +1,4 @@
-type TestSystem{M1,M2}
+struct TestSystem{M1,M2}
   v::Vector{LTISystems.LtiSystem}
   sol::M1
   input::M2

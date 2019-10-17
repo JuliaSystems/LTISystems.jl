@@ -361,18 +361,18 @@ convert(::Type{MatrixFractionDescription{Val{:siso},Val{:cont},Val{:lfd}}}, g::R
 convert(::Type{MatrixFractionDescription{Val{:siso},Val{:disc},Val{:lfd}}}, g::Real)            =
   lfd(Poly(g,:z), Poly(one(g),:z), zero(Float64))
 convert(::Type{MatrixFractionDescription{Val{:mimo},Val{:cont},Val{:lfd}}}, g::AbstractMatrix)  =
-  lfd(PolyMatrix(g, Val{:s}), PolyMatrix(eye(eltype(g), size(g,1), size(g,1))))
+  lfd(PolyMatrix(g, Val{:s}), PolyMatrix(I(eltype(g), size(g,1), size(g,1))))
 convert(::Type{MatrixFractionDescription{Val{:mimo},Val{:disc},Val{:lfd}}}, g::AbstractMatrix)  =
-  lfd(PolyMatrix(g, Val{:z}), PolyMatrix(eye(eltype(g), size(g,1), size(g,1))), zero(Float64))
+  lfd(PolyMatrix(g, Val{:z}), PolyMatrix(I(eltype(g), size(g,1), size(g,1))), zero(Float64))
 
 convert(::Type{MatrixFractionDescription{Val{:siso},Val{:cont},Val{:rfd}}}, g::Real)            =
   rfd(Poly(g,:s), Poly(one(g),:s))
 convert(::Type{MatrixFractionDescription{Val{:siso},Val{:disc},Val{:rfd}}}, g::Real)            =
   rfd(Poly(g,:z), Poly(one(g),:z), zero(Float64))
 convert(::Type{MatrixFractionDescription{Val{:mimo},Val{:cont},Val{:rfd}}}, g::AbstractMatrix)  =
-  rfd(PolyMatrix(g, Val{:s}), PolyMatrix(eye(eltype(g), size(g,2), size(g,2))))
+  rfd(PolyMatrix(g, Val{:s}), PolyMatrix(I(eltype(g), size(g,2), size(g,2))))
 convert(::Type{MatrixFractionDescription{Val{:mimo},Val{:disc},Val{:rfd}}}, g::AbstractMatrix)  =
-  rfd(PolyMatrix(g, Val{:z}), PolyMatrix(eye(eltype(g), size(g,2), size(g,2))), zero(Float64))
+  rfd(PolyMatrix(g, Val{:z}), PolyMatrix(I(eltype(g), size(g,2), size(g,2))), zero(Float64))
 
 # conversions between lfd and rfd
 convert(::Type{MatrixFractionDescription{Val{S},Val{T},Val{:lfd}}},

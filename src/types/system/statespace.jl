@@ -318,16 +318,16 @@ function zeros(s::StateSpace)
     return Complex{Float64}[]
   end
 
-  svdobj  = svdfact([Crc Drc], thin = false)
-  W       = flipdim(adjoint(svdobj.Vt), 2)
+  svdobj  = svd([Crc Drc], full = true)
+  W       = reverse(adjoint(svdobj.Vt), dims=2)
   Af      = [Arc Brc]*W[:, 1:nrc]
 
   if mrc == 0
-    zerovalues = eigfact(Af).values
+    zerovalues = eigen(Af).values
     return zerovalues
   else
     Bf    = W[1:nrc,1:nrc]
-    zerovalues = eigfact(Af, Bf).values
+    zerovalues = eigen(Af, Bf).values
     return zerovalues
   end
 end
@@ -338,7 +338,7 @@ tzeros(s::StateSpace) = zeros(minreal(s))
 # Poles of a state-space model
 function poles(s::StateSpace)
   Aₘ, _, _, _ = minreal(s.A, s.B, s.C, s.D)
-  return eigfact(Aₘ).values
+  return eigen!(Aₘ).values
 end
 
 # Negative of a state-space model

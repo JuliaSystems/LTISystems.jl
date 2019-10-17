@@ -4,8 +4,8 @@ using PolynomialMatrices
 
 using LTISystems
 
-using Base.Test
-using Base.Test.@testset
+using Test
+#using Test.@testset
 
 # conversions
 include("conversions/tf2ss.jl")

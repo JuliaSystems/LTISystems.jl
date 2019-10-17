@@ -6,8 +6,8 @@ function reduce(A::M1, B::M2, C::M3, D::M4, tol::Float64 = zero(Float64)) where 
   @assert size(B,2) == size(D,2) "reduce: B and D must have the same column size"
   @assert size(C,1) == size(D,1) "reduce: C and D must have the same row size"
 
-  n1, n2  = size(B,1,2)
-  n3, n4  = size(C,1,2)
+  n1, n2  = size(B)
+  n3, n4  = size(C)
 
   ν₁, ν₂  = n1, n1
   σ₁, σ₂  = n3, n3
@@ -27,8 +27,8 @@ function reduce(A::M1, B::M2, C::M3, D::M4, tol::Float64 = zero(Float64)) where 
   tol     = max(tol, 10*max(n3,n2+n4)*norm(temp1,1)*eps(Float64) + eps(Float64))
 
   while τ ≠ 0 && ρ ≠ 0 && ν₂ ≠ 0
-    n3, n4  = size(Ctemp,1,2)
-    svdobj  = svdfact(Dtemp, thin = false)
+    n3, n4  = size(Ctemp)
+    svdobj  = svd(Dtemp, full = true)
     σ₂      = sum(svdobj.S .>= tol)
     τ       = n3 - σ₂
 
@@ -38,14 +38,14 @@ function reduce(A::M1, B::M2, C::M3, D::M4, tol::Float64 = zero(Float64)) where 
     D̄       = temp2[1:σ₂, n4+1:end]
 
     if τ ≠ 0
-      svdobj  = svdfact(view(temp2, σ₂+1:n3, 1:n4), thin = false)
+      svdobj  = svd(view(temp2, σ₂+1:n3, 1:n4), full = true)
       ρ       = sum(svdobj.S .>= tol)
       ν₂      = n4 - ρ
 
       if ρ ≠ 0 && ν₂ ≠ 0
         μ     = ρ + σ₂
         δ     += ρ
-        V     = flipdim(svdobj.Vt', 2)
+        V     = reverse(svdobj.Vt', dims=2)
         temp3 = [V'*Atemp*V ; C̄*V   ]
         temp4 = [V'*Btemp   ; D̄ ]
 

@@ -60,12 +60,12 @@ julia> Cc = C*Tc; Dc = D;
         Nelson and Sons, 1970.
 """
 function rosenbrock(A::M1, B::M2, tol::Float64 = zero(Float64)) where {M1<:AbstractMatrix,M2<:AbstractMatrix}
-  n1, n2  = size(A,1,2)
-  n3, n4  = size(B,1,2)
+  n1, n2  = size(A)
+  n3, n4  = size(B)
   @assert n1 == n2 "rosenbrock: A must be square"
   @assert n1 == n3 "rosenbrock: A and B must have same row sizes"
   c::Int              = 0
-  T::Matrix{Float64}  = eye(n1)
+  T::Matrix{Float64}  = I(n1)
   τ₁, τ₂  = (n1,1)
   ρ₁, ρ₂  = (0,1)
   Atemp   = A
@@ -73,8 +73,8 @@ function rosenbrock(A::M1, B::M2, tol::Float64 = zero(Float64)) where {M1<:Abstr
   tol     = max(tol, 10*max(n3,n4)*norm(B,1)*eps(Float64) + eps(Float64))
   while ρ₂ != 0 && τ₂ != 0
     n       = size(Btemp,1)
-    svdobj  = svdfact(Btemp, thin = false)
-    U       = flipdim(svdobj.U, 2)
+    svdobj  = svd(Btemp, full = true)
+    U       = reverse(svdobj.U, dims=2)
     ρ₂      = sum(svdobj.S .>= tol)
     τ₂      = n - ρ₂
 
@@ -83,7 +83,7 @@ function rosenbrock(A::M1, B::M2, tol::Float64 = zero(Float64)) where {M1<:Abstr
       Btemp   = view(Atemp, 1:τ₂, τ₂+1:n)
       Atemp   = view(Atemp, 1:τ₂, 1:τ₂)
       T[:]    = T*vcat(hcat(U, zeros(size(U, 1),c)),
-                        hcat(zeros(c, size(U, 2)), eye(c)))
+                        hcat(zeros(c, size(U, 2)), I(c)))
 
       c       = c + ρ₂
       ρ₁, τ₁  = (ρ₂, τ₂)
