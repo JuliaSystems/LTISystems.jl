@@ -1,5 +1,5 @@
-info("Starting tests for `StateSpace`...")
+print("Starting tests for `StateSpace`...")
 
 @test 1 == 1
 
-info("Tests for `StateSpace` finished.")
+print("Tests for `StateSpace` finished.")

@@ -262,8 +262,8 @@ function lfd(N::AbstractVector{T1}, D::AbstractVector{T2}, Ts::Real, var::Symbol
   vars    = [:z̄,:q̄,:qinv,:zinv]
   @assert var ∈ vars string("tf: var ∉ ", vars)
 
-  nlast       = findlast(N)
-  dlast       = findlast(D)
+  nlast       = findlast(!iszero, N)
+  dlast       = findlast(!iszero, D)
   order       = max(nlast, dlast)
   N_          = zeros(T1, order)
   N_[1:nlast] = N[1:nlast]
@@ -277,8 +277,8 @@ function rfd(N::AbstractVector{T1}, D::AbstractVector{T2}, Ts::Real, var::Symbol
   vars    = [:z̄,:q̄,:qinv,:zinv]
   @assert var ∈ vars string("tf: var ∉ ", vars)
 
-  nlast       = findlast(N)
-  dlast       = findlast(D)
+  nlast       = findlast(!iszero, N)
+  dlast       = findlast(!iszero, D)
   order       = max(nlast, dlast)
   N_          = zeros(T1, order)
   N_[1:nlast] = N[1:nlast]
@@ -349,8 +349,6 @@ end
 #   @boundscheck checkbounds(s.N, I...)
 #   rfd(ss(s)[I...])
 # end
-#
-# endof(s::MatrixFractionDescription{Val{:mimo}}) = endof(s.N)
 #
 # Conversion and promotion
 promote_rule(::Type{T}, ::Type{MatrixFractionDescription{Val{:siso},S,L}}) where {T<:Real,S,L} =

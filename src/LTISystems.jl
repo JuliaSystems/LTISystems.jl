@@ -40,7 +40,7 @@ import Base: numerator, denominator
 import Base: inv, zeros
 
 # Indexing
-import Base: getindex, setindex!, endof
+import Base: getindex, setindex!, firstindex, lastindex
 
 # Import iteration interface functions
 import Base: iterate, IteratorSize, IteratorEltype, eltype, length, size

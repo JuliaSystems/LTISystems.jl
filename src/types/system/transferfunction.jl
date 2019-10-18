@@ -190,8 +190,8 @@ function tf(num::AbstractVector, den::AbstractVector, Ts::Real, var::Symbol)
     throw(DomainError())
   end
 
-  numlast         = findlast(num)
-  denlast         = findlast(den)
+  numlast         = findlast(!iszero, num)
+  denlast         = findlast(!iszero, den)
   order           = max(numlast, denlast)
   num_            = zeros(eltype(num), order)
   num_[1:numlast] = num[1:numlast]
@@ -225,15 +225,14 @@ numstates(s::TransferFunction)    = sum(x->degree(x)[2], s.mat)
 numinputs(s::TransferFunction)    = s.nu
 numoutputs(s::TransferFunction)   = s.ny
 
-num(s::TransferFunction{Val{:siso}})  = num(s.mat[1])
-num(s::TransferFunction{Val{:mimo}})  = map(num, s.mat)
-den(s::TransferFunction{Val{:siso}})  = den(s.mat[1])
-den(s::TransferFunction{Val{:mimo}})  = map(den, s.mat)
+numerator(s::TransferFunction{Val{:siso}})    = numerator(s.mat[1])
+numerator(s::TransferFunction{Val{:mimo}})    = map(numerator, s.mat)
+denominator(s::TransferFunction{Val{:siso}})  = denominator(s.mat[1])
+denominator(s::TransferFunction{Val{:mimo}})  = map(denominator, s.mat)
 
 # Iteration interface
-start(s::TransferFunction{Val{:mimo}})        = start(s.mat)
-next(s::TransferFunction{Val{:mimo}}, state)  = (s[state], state+1)
-done(s::TransferFunction{Val{:mimo}}, state)  = done(s.mat, state)
+iterate(s::TransferFunction{Val{:mimo}})        = iterate(s.mat)
+iterate(s::TransferFunction{Val{:mimo}}, state) = iterate(smat, state)
 
 eltype(::Type{TransferFunction{Val{:mimo},Val{S},Val{U},V}}) where {S,U,V} =
   TransferFunction{Val{:siso},Val{S},Val{U},Matrix{eltype(V)}}
@@ -289,7 +288,8 @@ getindex(s::TransferFunction{Val{:mimo}}, rows, ::Colon)    = s[rows, 1:s.nu]
 getindex(s::TransferFunction{Val{:mimo}}, ::Colon, cols)    = s[1:s.ny, cols]
 getindex(s::TransferFunction{Val{:mimo}}, ::Colon)          = s[1:end]
 getindex(s::TransferFunction{Val{:mimo}}, ::Colon, ::Colon) = s[1:s.ny,1:s.nu]
-endof(s::TransferFunction{Val{:mimo}})                      = endof(s.mat)
+firstindex(s::TransferFunction{Val{:mimo}})                 = firstindex(s.mat)
+lastindex(s::TransferFunction{Val{:mimo}})                  = lastindex(s.mat)
 
 # Conversion and promotion
 promote_rule(::Type{T1}, ::Type{TransferFunction{Val{T2},Val{S},Val{U},V}}) where {T1<:Real,T2,S,U,V} =

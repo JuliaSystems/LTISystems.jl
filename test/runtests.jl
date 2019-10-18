@@ -1,6 +1,7 @@
 using Polynomials
 using RationalFunctions
 using PolynomialMatrices
+using LinearAlgebra
 
 using LTISystems
 

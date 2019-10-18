@@ -247,7 +247,8 @@ getindex(s::StateSpace{Val{:mimo}}, rows, ::Colon)    = s[rows, 1:s.nu]
 getindex(s::StateSpace{Val{:mimo}}, ::Colon, cols)    = s[1:s.ny, cols]
 getindex(s::StateSpace{Val{:mimo}}, ::Colon)          = s[1:end]
 getindex(s::StateSpace{Val{:mimo}}, ::Colon, ::Colon) = s[1:s.ny,1:s.nu]
-endof(s::StateSpace{Val{:mimo}})                      = endof(s.D)
+firstindex(s::StateSpace{Val{:mimo}})                 = firstindex(s.D)
+lastindex(s::StateSpace{Val{:mimo}})                  = lastindex(s.D)
 
 # Multiplicative and additive identities (meaningful only for SISO)
 one(::Type{StateSpace{Val{:siso},Val{:cont},M1,M2,M3,M4}}) where {M1,M2,M3,M4}  =
