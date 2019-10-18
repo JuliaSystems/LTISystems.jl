@@ -77,25 +77,26 @@ struct MatrixFractionDescription{T,S,L,M1,M2}  <: LtiSystem{T,S}
     Dhci = inv(Dhc)
     D = Dhci*D
 
-    xidx = (cumsum(vcat(0,degs))+1)[1:end-1]
-    dxidx = cumsum(degs,1)[:]
+    xidx = broadcast(+, 1, cumsum(vcat(0,degs), dims=1))[1:end-1]
+    dxidx = cumsum(degs, dims=1)[:]
 
-    dx[:] = zeros(dx)
+    dx[:] = zero(dx)
     # "A matrix"
     for (k,v) in coeffs(D)
-      for row in find(degs .> k)
+      for row in findall(degs[:] .> k)
         dx[dxidx[row]-k] += -dot(v[row,:], x.x[xidx])
       end
     end
 
     for row in 1:ny
-      nrowx = degs[row]-1
-      dx[xidx[row]-1+(1:nrowx)] += x.x[xidx[row]+(1:nrowx)]
+      for krowx in 1:(degs[row]-1)
+        dx[xidx[row]-1+krowx] += x.x[xidx[row]+krowx]
+      end
     end
 
     # "B matrix"
     for (k,v) in coeffs(N)
-      for row in find(degs .> k)
+      for row in findall(degs[:] .> k)
         dx[dxidx[row]-k] += dot(v[row,:], ucalc)
       end
     end
@@ -104,7 +105,7 @@ struct MatrixFractionDescription{T,S,L,M1,M2}  <: LtiSystem{T,S}
     if degree(N) == degree(D)
       tmp = coeffs(N)[degree(N)]*ucalc
       for (k,v) in coeffs(D)
-        for row in find(degs .> k)
+        for row in findall(degs[:] .> k)
           dx[dxidx[row]-k] += -dot(v[row,:], tmp[xidx])
         end
       end
@@ -133,21 +134,22 @@ struct MatrixFractionDescription{T,S,L,M1,M2}  <: LtiSystem{T,S}
     Dhci = inv(Dhc)
     D = Dhci*D
 
-    xidx = cumsum(degs,2)[:]
-    dxidx = (cumsum(hcat(0,degs),2)+1)[1:end-1]
+    xidx = cumsum(degs, dims=2)[:]
+    dxidx = broadcast(+, 1, cumsum(hcat(0,degs), dims=2))[1:end-1]
 
-    x.y = zeros(x.y)
-    dx[:] = zeros(dx)
+    x.y = zero(x.y)
+    dx[:] = zero(dx)
 
     # "A matrix"
     for (k,v) in coeffs(D)
-      for col in find(degs .> k)
+      for col in findall(degs[:] .> k)
         dx[dxidx] += -v[:,col]*x.x[xidx[col]-k]
       end
     end
     for col in 1:nu
-      ncolx = degs[col]-1
-      dx[dxidx[col]+(1:ncolx)] += x.x[dxidx[col]-1+(1:ncolx)]
+      for kcolx in 1:(degs[col]-1)
+        dx[dxidx[col]+kcolx] += x.x[dxidx[col]-1+kcolx]
+      end
     end
 
     # "B matrix"
@@ -155,7 +157,7 @@ struct MatrixFractionDescription{T,S,L,M1,M2}  <: LtiSystem{T,S}
 
     # "C matrix"
     for (k,v) in coeffs(N)
-      for col in find(degs .> k)
+      for col in findall(degs[:] .> k)
         x.y[:] += v[:,col]*x.x[xidx[col]-k]
       end
     end
@@ -166,7 +168,7 @@ struct MatrixFractionDescription{T,S,L,M1,M2}  <: LtiSystem{T,S}
       b0 = coeffs(N)[degree(N)]
       tmp = ucalc
       for (k,v) in coeffs(D)
-        for col in find(degs .> k)
+        for col in findall(degs[:] .> k)
           tmp += -v[:,col]*x.x[xidx[col]-k]
         end
       end

@@ -16,18 +16,18 @@ function simulate(sys::LtiSystem{Val{T},Val{:cont}}, tspan;
   input = (t,x)->zeros(numinputs(sys)), alg::DiffEqBase.AbstractODEAlgorithm = Tsit5(),
   initial::AbstractVector = zeros(numstates(sys)), tstops = Float64[], kwargs...) where {T}
 
-  f     = (t,x,dx)->sys(t,x,dx,input)
-  simvar= SimType(initial, zeros(numoutputs(sys)), zeros(numinputs(sys)))
-  f(tspan[1], simvar, zeros(initial))
+  f      = (dx,x,p,t)->sys(t,x,dx,input)
+  simvar = SimType(initial, zeros(numoutputs(sys)), zeros(numinputs(sys)))
+  f(zero(initial), simvar, 0, tspan[1])
 
-  tstops= [tstops..., discontinuities(input, tspan)...]
-  prob  = ODEProblem(f, simvar, tspan)
-  sln   = OrdinaryDiffEq.solve(prob, alg; tstops = tstops, kwargs...)
+  tstops = [tstops..., discontinuities(input, tspan)...]
+  prob   = ODEProblem(f, simvar, tspan)
+  sln    = OrdinaryDiffEq.solve(prob, alg; tstops = tstops, kwargs...)
 
-  tvals = sln.t
-  xvals = Matrix{eltype(sln[1].x)}(length(tvals), numstates(sys))
-  yvals = Matrix{eltype(sln[1].y)}(length(tvals), numoutputs(sys))
-  uvals = Matrix{eltype(sln[1].u)}(length(tvals), numinputs(sys))
+  tvals  = sln.t
+  xvals  = Matrix{eltype(sln[1].x)}(undef, length(tvals), numstates(sys))
+  yvals  = Matrix{eltype(sln[1].y)}(undef, length(tvals), numoutputs(sys))
+  uvals  = Matrix{eltype(sln[1].u)}(undef, length(tvals), numinputs(sys))
   for idx in 1:length(tvals)
     xvals[idx,:] = sln[idx]
     yvals[idx,:] = sln[idx].y
@@ -41,10 +41,10 @@ function simulate(sys::LtiSystem{Val{T},Val{:disc}}, tspan;
   input = (t,x)->zeros(numinputs(sys)),
   initial::AbstractVector = zeros(numstates(sys)), kwargs...) where {T}
 
-  f      = (t,x,dx)->sys(t,x,dx,input)
+  f      = (dx,x,p,t)->sys(t,x,dx,input)
   simvar = SimType(initial, zeros(numoutputs(sys)), zeros(numinputs(sys)))
-  temp   = zeros(simvar.x)
-  f(0.0, simvar, temp)  # ensure first step is correct
+  temp   = zero(simvar.x)
+  f(temp, simvar, 0, 0.0)  # ensure first step is correct
   simvar.x = temp       # alternative is adding extra time step, see below
 
   dt    = samplingtime(sys)
@@ -53,9 +53,9 @@ function simulate(sys::LtiSystem{Val{T},Val{:disc}}, tspan;
     kwargs..., dt = dt)
 
   tvals = sln.t
-  xvals = Matrix{eltype(sln[1].x)}(length(tvals), numstates(sys))
-  yvals = Matrix{eltype(sln[1].y)}(length(tvals), numoutputs(sys))
-  uvals = Matrix{eltype(sln[1].u)}(length(tvals), numinputs(sys))
+  xvals = Matrix{eltype(sln[1].x)}(undef, length(tvals), numstates(sys))
+  yvals = Matrix{eltype(sln[1].y)}(undef, length(tvals), numoutputs(sys))
+  uvals = Matrix{eltype(sln[1].u)}(undef, length(tvals), numinputs(sys))
   for idx in 1:length(tvals)
     xvals[idx,:] = sln[idx]
     yvals[idx,:] = sln[idx].y

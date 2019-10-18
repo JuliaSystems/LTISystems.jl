@@ -80,15 +80,15 @@ struct TransferFunction{T,S,U,V} <: LtiSystem{T,S}
     nb    = db == da ? db-1          : db
 
     if da > 0
-      dx[idx+(da:-1:1)]     = -denp[0:end-1]*x.x[idx+1]
-      dx[idx+(da:-1:da-nb)] += nump[0:nb]*u[j]
+      dx[(idx+da):-1:(idx+1)]      = -denp[0:end-1]*x.x[idx+1]
+      dx[(idx+da):-1:(idx+da-nb)] +=  nump[0:nb]*u[j]
       for k = 2:da
         dx[idx+k-1] += x.x[idx+k]
       end
       out += x.x[idx+1]
       # take care of direct term
       if db == da
-        dx[idx+(da:-1:1)] += -denp[0:end-1]*nump[end]*u[j]
+        dx[(idx+da):-1:(idx+1)] += -denp[0:end-1]*nump[end]*u[j]
       end
     end
     out, da

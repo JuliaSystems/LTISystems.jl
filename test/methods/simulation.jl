@@ -7,9 +7,8 @@ struct TestSystem{M1,M2}
   end
 end
 
-Base.start(s::TestSystem)       = start(s.v)
-Base.next(s::TestSystem, state) = (s.v[state], state+1)
-Base.done(s::TestSystem, state) = done(s.v, state)
+Base.iterate(s::TestSystem)         = (s.v[1], 1)
+Base.iterate(s::TestSystem, i::Int) = i < lastindex(s.v) ? (s.v[i+1], i+1) : nothing
 
 T = 20.
 time = (0, T)
@@ -18,14 +17,14 @@ simtol = 1e-4
 function testsim(sim, sol, simtol)
   simsum = zero(sim.y[1])
   for (i,t) in enumerate(sim.t)
-    simsum += sum(abs2.(sol(t)-sim.y[i,:]))
+    simsum += sum(abs2.(broadcast(-, sol(t), sim.y[i,:])))
   end
   return simsum < simtol
 end
 
 # first continous system
 # s1 = 1/(s+2) step response 1/2 - 1/2*exp(-2t)
-c1v = Vector{LTISystems.LtiSystem}(0)
+c1v = Vector{LTISystems.LtiSystem}()
 push!(c1v, tf([1],[1, 2]))
 push!(c1v, lfd([1], [1, 2]))
 push!(c1v, rfd([1], [1, 2]))
@@ -117,7 +116,7 @@ c4rfd = rfd([1.,6.,9], [1.,3.,2.])
 A = [ 0.  1.;
      -2. -3.]
 
-B = [0. 1.].'
+B = transpose([0. 1.])
 
 C = [7. 3.]
 D = 1.
@@ -132,28 +131,28 @@ c4 = TestSystem(c4v, c4sol, c4inp)
 @testset "continuous simulation" begin
   @testset "first order SISO system" begin
     for sys in c1
-      sim = simulate(sys, time; input = c1.input, initial = zeros(numstates(sys)))
+      sim = simulate(sys, time; input = c1.input, initial = zeros(Float64, numstates(sys)))
       @test testsim(sim, c1.sol, simtol)
     end
   end
 
   @testset "second order MIMO system" begin
     for sys in c2
-      sim = simulate(sys, time; input = c2.input, initial = zeros(numstates(sys)))
+      sim = simulate(sys, time; input = c2.input, initial = zeros(Float64, numstates(sys)))
       @test testsim(sim, c2.sol, simtol)
     end
   end
 
   @testset "MIMO system with different row and col degrees" begin
     for sys in c3
-      sim = simulate(sys, time; input = c3.input, initial = zeros(numstates(sys)))
+      sim = simulate(sys, time; input = c3.input, initial = zeros(Float64, numstates(sys)))
       @test testsim(sim, c3.sol, simtol)
     end
   end
 
   @testset "second order SISO system with direct term" begin
     for sys in c4
-      sim = simulate(sys, time; input = c4.input, initial = zeros(numstates(sys)))
+      sim = simulate(sys, time; input = c4.input, initial = zeros(Float64, numstates(sys)))
       @test testsim(sim, c4.sol, simtol)
     end
   end
@@ -171,7 +170,7 @@ a = 0.2
 d1sol = t->fores(t,b,a)
 d1inp = Signals.Step([0.], [1.], [0.])
 
-d1v = Vector{LTISystems.LtiSystem}(0)
+d1v = Vector{LTISystems.LtiSystem}()
 push!(d1v, tf([b],[1, -a], 1))
 push!(d1v, lfd([b],[1, -a], 1))
 push!(d1v, rfd([b],[1, -a], 1))

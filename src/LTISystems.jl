@@ -43,7 +43,7 @@ import Base: inv, zeros
 import Base: getindex, setindex!, endof
 
 # Import iteration interface functions
-import Base: start, next, done, eltype, length, size
+import Base: iterate, IteratorSize, IteratorEltype, eltype, length, size
 
 # Import printing functions
 import Base: summary
