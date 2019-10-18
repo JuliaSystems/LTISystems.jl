@@ -1,5 +1,5 @@
-info("Starting tests for `LtiSystem`...")
+print("Starting tests for `LtiSystem`...")
 
 @test 1 == 1
 
-info("Tests for `LtiSystem` finished.")
+print("Tests for `LtiSystem` finished.")

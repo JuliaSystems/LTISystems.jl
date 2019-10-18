@@ -8,8 +8,8 @@ ss(s::TransferFunction{Val{:siso},Val{:disc}}) = minreal(ss(_tf2ss(s)..., s.Ts))
 # TODO num(s) instead of num(s.mat[1])
 # controllable canonical form
 function _tf2ss(s::TransferFunction{Val{:siso}})
-  nump  = RationalFunctions.num(s.mat[1])
-  denp  = RationalFunctions.den(s.mat[1])
+  nump  = RationalFunctions.numerator(s.mat[1])
+  denp  = RationalFunctions.denominator(s.mat[1])
   nump /= denp[end]
   denp /= denp[end]
   m     = degree(nump)

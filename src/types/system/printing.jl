@@ -1,28 +1,28 @@
-_dimensions(s::LtiSystem{Val{:siso}})     = ""
-_dimensions(s::LtiSystem{Val{:mimo}})     = "$(numoutputs(s))×$(numinputs(s))"
-_time{T}(::LtiSystem{Val{T},Val{:cont}}) = "continuous"
-_time{T}(::LtiSystem{Val{T},Val{:disc}}) = "discrete"
-_timevar{T}(::LtiSystem{Val{T},Val{:cont}}) = "t"
-_timevar{T}(::LtiSystem{Val{T},Val{:disc}}) = "k"
-_printsamplingtime{T}(s::LtiSystem{Val{T},Val{:cont}}) = ""
-_printsamplingtime{T}(s::LtiSystem{Val{T},Val{:disc}}) = "+$(samplingtime(s))"
+_dimensions(s::LtiSystem{Val{:siso}})              = ""
+_dimensions(s::LtiSystem{Val{:mimo}})              = "$(numoutputs(s))×$(numinputs(s))"
+_time(::LtiSystem{Val{T},Val{:cont}}) where {T}    = "continuous"
+_time(::LtiSystem{Val{T},Val{:disc}}) where {T}    = "discrete"
+_timevar(::LtiSystem{Val{T},Val{:cont}}) where {T} = "t"
+_timevar(::LtiSystem{Val{T},Val{:disc}}) where {T} = "k"
+_printsamplingtime(s::LtiSystem{Val{T},Val{:cont}}) where {T} = ""
+_printsamplingtime(s::LtiSystem{Val{T},Val{:disc}}) where {T} = "+$(samplingtime(s))"
 
 import Base: summary
 
 # StateSpace printing
-_printxupdate{T}(s::StateSpace{Val{T},Val{:cont}})  = "ẋ(t)"
-_printxupdate{T}(s::StateSpace{Val{T},Val{:disc}})  = "x(k+1)"
+_printxupdate(s::StateSpace{Val{T},Val{:cont}}) where {T} = "ẋ(t)"
+_printxupdate(s::StateSpace{Val{T},Val{:disc}}) where {T} = "x(k+1)"
 
-summary{T}(s::StateSpace{Val{:siso},Val{T}})  = "StateSpace"
-summary{T}(s::StateSpace{Val{:mimo},Val{T}})  = "$(_dimensions(s)) StateSpace"
+summary(s::StateSpace{Val{:siso},Val{T}}) where {T} = "StateSpace"
+summary(s::StateSpace{Val{:mimo},Val{T}}) where {T} = "$(_dimensions(s)) StateSpace"
 
 # Compact representations
-function _compact{T,S}(stream, ::MIME"text/plain", s::StateSpace{Val{T},Val{S}})
+function _compact(stream, ::MIME"text/plain", s::StateSpace{Val{T},Val{S}}) where {T,S}
   var = ifelse(S == :cont, "s", "z")
   print(stream, "G($(var))")
 end
 
-function _compact{T,S}(stream, ::MIME"text/latex", s::StateSpace{Val{T},Val{S}})
+function _compact(stream, ::MIME"text/latex", s::StateSpace{Val{T},Val{S}}) where {T,S}
   var = ifelse(S == :cont, "s", "z")
   print(stream, "\$")
   print(stream, "G($(var))")
@@ -32,7 +32,7 @@ end
 # TODO: Think about text/html
 
 # Full representations
-function _full{T,S}(stream, m::MIME"text/plain", s::StateSpace{Val{T},Val{S}})
+function _full(stream, m::MIME"text/plain", s::StateSpace{Val{T},Val{S}}) where {T,S}
   tvar = _timevar(s)
   println(stream, summary(s))
   println(stream, "$(_printxupdate(s)) = Ax($tvar) + Bu($tvar,x)")
@@ -40,7 +40,7 @@ function _full{T,S}(stream, m::MIME"text/plain", s::StateSpace{Val{T},Val{S}})
   println(stream, "with $(numstates(s)) states in $(_time(s)) time.")
 end
 
-function _full{T,S}(stream, m::MIME"text/latex", s::StateSpace{Val{T},Val{S}})
+function _full(stream, m::MIME"text/latex", s::StateSpace{Val{T},Val{S}}) where {T,S}
   tvar = _timevar(s)
   println(stream, summary(s))
   print(stream, "\\begin{align*}")
@@ -61,16 +61,16 @@ end
   get(stream, :compact, false) ? _compact(stream, mime, s) : _full(stream, mime, s)
 
 ## TransferFunction printing
-summary{T}(s::TransferFunction{Val{:siso},Val{T}})  = "TransferFunction"
-summary{T}(s::TransferFunction{Val{:mimo},Val{T}})  = "$(_dimensions(s)) TransferFunction"
+summary(s::TransferFunction{Val{:siso},Val{T}}) where {T} = "TransferFunction"
+summary(s::TransferFunction{Val{:mimo},Val{T}}) where {T} = "$(_dimensions(s)) TransferFunction"
 
 # Compact representations
-function _compact{T,S}(stream, ::MIME"text/plain", s::TransferFunction{Val{T},Val{S}})
+function _compact(stream, ::MIME"text/plain", s::TransferFunction{Val{T},Val{S}}) where {T,S}
   var = ifelse(S == :cont, "s", "z")
   print(stream, "n($(var))/d($(var))")
 end
 
-function _compact{T,S}(stream, ::MIME"text/latex", s::TransferFunction{Val{T},Val{S}})
+function _compact(stream, ::MIME"text/latex", s::TransferFunction{Val{T},Val{S}}) where {T,S}
   var = ifelse(S == :cont, "s", "z")
   print(stream, "\$")
   print(stream, "\\tfrac{\\mathrm{n}($(var))}{\\mathrm{d}($(var))}")
@@ -80,7 +80,7 @@ end
 # TODO: Think about text/html
 
 # Full representations
-function _full{T,S}(stream, m::MIME"text/plain", s::TransferFunction{Val{T},Val{S}})
+function _full(stream, m::MIME"text/plain", s::TransferFunction{Val{T},Val{S}}) where {T,S}
   var  = ifelse(S == :cont, "s", "z")
   tvar = _timevar(s)
   println(stream, summary(s))
@@ -88,7 +88,7 @@ function _full{T,S}(stream, m::MIME"text/plain", s::TransferFunction{Val{T},Val{
   println(stream, "in $(_time(s)) time.")
 end
 
-function _full{T,S}(stream, m::MIME"text/latex", s::TransferFunction{Val{T},Val{S}})
+function _full(stream, m::MIME"text/latex", s::TransferFunction{Val{T},Val{S}}) where {T,S}
   var  = ifelse(S == :cont, "s", "z")
   tvar = _timevar(s)
   println(stream, summary(s))
@@ -110,32 +110,32 @@ end
 
 ## MatrixFractionDescription printing
 
-_mfdtype{S,T,L}(::MatrixFractionDescription{Val{S},Val{T},Val{L}}) = ifelse(L == :lfd, "Left", "Right")
+_mfdtype(::MatrixFractionDescription{Val{S},Val{T},Val{L}}) where {S,T,L} = ifelse(L == :lfd, "Left", "Right")
 
-summary{T,L}(s::MatrixFractionDescription{Val{:siso},Val{T},Val{L}}) =
+summary(s::MatrixFractionDescription{Val{:siso},Val{T},Val{L}}) where {T,L} =
   "$(_mfdtype(s)) MatrixFractionDescription"
-summary{T,L}(s::MatrixFractionDescription{Val{:mimo},Val{T},Val{L}}) =
+summary(s::MatrixFractionDescription{Val{:mimo},Val{T},Val{L}}) where {T,L} =
   "$(_dimensions(s)) $(_mfdtype(s)) MatrixFractionDescription"
 
 # Compact representations
-function _compact{T,S}(stream, ::MIME"text/plain", s::MatrixFractionDescription{Val{T},Val{S},Val{:lfd}})
+function _compact(stream, ::MIME"text/plain", s::MatrixFractionDescription{Val{T},Val{S},Val{:lfd}}) where {T,S}
   var = ifelse(S == :cont, "s", "z")
   print(stream, "d($(var))", "\\", "n($(var))")
 end
 
-function _compact{T,S}(stream, ::MIME"text/plain", s::MatrixFractionDescription{Val{T},Val{S},Val{:rfd}})
+function _compact(stream, ::MIME"text/plain", s::MatrixFractionDescription{Val{T},Val{S},Val{:rfd}}) where {T,S}
   var = ifelse(S == :cont, "s", "z")
   print(stream, "n($(var))/d($(var))")
 end
 
-function _compact{T,S}(stream, ::MIME"text/latex", s::MatrixFractionDescription{Val{T},Val{S},Val{:lfd}})
+function _compact(stream, ::MIME"text/latex", s::MatrixFractionDescription{Val{T},Val{S},Val{:lfd}}) where {T,S}
   var = ifelse(S == :cont, "s", "z")
   print(stream, "\$")
   print(stream, "d($(var))", "\\", "n($(var))")
   print(stream, "\$")
 end
 
-function _compact{T,S}(stream, ::MIME"text/latex", s::MatrixFractionDescription{Val{T},Val{S},Val{:rfd}})
+function _compact(stream, ::MIME"text/latex", s::MatrixFractionDescription{Val{T},Val{S},Val{:rfd}}) where {T,S}
   var = ifelse(S == :cont, "s", "z")
   print(stream, "\$")
   print(stream, "n($(var))/d($(var))")
@@ -145,7 +145,7 @@ end
 # TODO: Think about text/html
 
 # Full representations
-function _full{T,S}(stream, m::MIME"text/plain", s::MatrixFractionDescription{Val{T},Val{S},Val{:lfd}})
+function _full(stream, m::MIME"text/plain", s::MatrixFractionDescription{Val{T},Val{S},Val{:lfd}}) where {T,S}
   var  = ifelse(S == :cont, "s", "z")
   tvar = _timevar(s)
   println(stream, summary(s))
@@ -153,7 +153,7 @@ function _full{T,S}(stream, m::MIME"text/plain", s::MatrixFractionDescription{Va
   println(stream, "in $(_time(s)) time.")
 end
 
-function _full{T,S}(stream, m::MIME"text/plain", s::MatrixFractionDescription{Val{T},Val{S},Val{:rfd}})
+function _full(stream, m::MIME"text/plain", s::MatrixFractionDescription{Val{T},Val{S},Val{:rfd}}) where {T,S}
   var  = ifelse(S == :cont, "s", "z")
   tvar = _timevar(s)
   println(stream, summary(s))
@@ -161,7 +161,7 @@ function _full{T,S}(stream, m::MIME"text/plain", s::MatrixFractionDescription{Va
   println(stream, "in $(_time(s)) time.")
 end
 
-function _full{T,S}(stream, m::MIME"text/latex", s::MatrixFractionDescription{Val{T},Val{S},Val{:lfd}})
+function _full(stream, m::MIME"text/latex", s::MatrixFractionDescription{Val{T},Val{S},Val{:lfd}}) where {T,S}
   var  = ifelse(S == :cont, "s", "z")
   tvar = _timevar(s)
   println(stream, summary(s))
@@ -171,7 +171,7 @@ function _full{T,S}(stream, m::MIME"text/latex", s::MatrixFractionDescription{Va
   println(stream, "in $(_time(s)) time.")
 end
 
-function _full{T,S}(stream, m::MIME"text/latex", s::MatrixFractionDescription{Val{T},Val{S},Val{:rfd}})
+function _full(stream, m::MIME"text/latex", s::MatrixFractionDescription{Val{T},Val{S},Val{:rfd}}) where {T,S}
   var  = ifelse(S == :cont, "s", "z")
   tvar = _timevar(s)
   println(stream, summary(s))

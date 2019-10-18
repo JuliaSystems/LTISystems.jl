@@ -1,11 +1,12 @@
 using Polynomials
 using RationalFunctions
 using PolynomialMatrices
+using LinearAlgebra
 
 using LTISystems
 
-using Base.Test
-using Base.Test.@testset
+using Test
+#using Test.@testset
 
 # conversions
 include("conversions/tf2ss.jl")

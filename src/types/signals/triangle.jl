@@ -1,13 +1,13 @@
-immutable Triangle{T,N} <: AbstractSignal{T,N}
+struct Triangle{T,N} <: AbstractSignal{T,N}
   magnitude::Vector{T}
   width::Vector{T}
   dc::Vector{T}
   shift::Vector{T}
   period::Vector{T}
 
-  function (::Type{Triangle}){T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real}(mag::Vector{T1},
+  function (::Type{Triangle})(mag::Vector{T1},
     width::Vector{T2} = ones(mag), dc::Vector{T3} = zeros(mag),
-    shift::Vector{T4} = zeros(mag), per::Vector{T5} = width)
+    shift::Vector{T4} = zeros(mag), per::Vector{T5} = width) where {T1<:Real,T2<:Real,T3<:Real,T4<:Real,T5<:Real}
     if !(length(mag) == length(width) == length(dc) == length(shift) == length(per))
       warn("Triangle(mag, width, dc, shift, per): all inputs must have the same lengths")
       throw(DomainError())
@@ -30,7 +30,7 @@ immutable Triangle{T,N} <: AbstractSignal{T,N}
     [shift], [per])
   (::Type{Triangle})() = Triangle(1.)
 
-  function (tr::Triangle{T}){T}(t::Real, x = nothing)
+  function (tr::Triangle{T})(t::Real, x = nothing) where {T}
     res   = divrem.(t - tr.shift, tr.period)
     tnorm = map(y->y[2], res)
     [(t < zero(t)) ? dc : (t < 0.25w) ? dc + 4m/w*t : (t < 0.75w) ? dc + m - 4m/w*(t-0.25w) :
@@ -39,7 +39,7 @@ immutable Triangle{T,N} <: AbstractSignal{T,N}
   end
 end
 
-function discontinuities{T1<:Real,T2<:Real,T3<:Real}(t::Triangle{T1}, tspan::Tuple{T2,T3})
+function discontinuities(t::Triangle{T1}, tspan::Tuple{T2,T3}) where {T1<:Real,T2<:Real,T3<:Real}
   tstops = Set{T1}()
 
   for i1 in 1:length(t.period)
@@ -64,8 +64,8 @@ function discontinuities{T1<:Real,T2<:Real,T3<:Real}(t::Triangle{T1}, tspan::Tup
   [tstop for tstop in tstops if tspan[1] ≤ tstop ≤ tspan[2]]
 end
 
-convert{T,N}(::Type{AbstractSignal{T,N}}, t::Triangle{T,N})       = t
-convert{T1,T2,N}(::Type{AbstractSignal{T1,N}}, t::Triangle{T2,N}) =
+convert(::Type{AbstractSignal{T,N}}, t::Triangle{T,N}) where {T,N}       = t
+convert(::Type{AbstractSignal{T1,N}}, t::Triangle{T2,N}) where {T1,T2,N} =
   Triangle(convert(Vector{T1}, t.magnitude), convert(Vector{T1}, t.width),
     convert(Vector{T1}, t.dc), convert(Vector{T1}, t.shift),
     convert(Vector{T1}, t.period))
@@ -74,11 +74,11 @@ convert{T1,T2,N}(::Type{AbstractSignal{T1,N}}, t::Triangle{T2,N}) =
 
 # Relation between `Real`s
 
-+{T<:Real}(x::Union{T,AbstractVector{T}}, r::Triangle)  =
++(x::Union{T,AbstractVector{T}}, r::Triangle) where {T<:Real}  =
   Triangle(t.magnitude, t.width, t.dc + x, t.shift, t.period)
-+{T<:Real}(t::Triangle, x::Union{T,AbstractVector{T}})  = +(x,  t)
--{T<:Real}(x::Union{T,AbstractVector{T}}, t::Triangle)  = +(x, -t)
--{T<:Real}(t::Triangle, x::Union{T,AbstractVector{T}})  = +(t, -x)
++(t::Triangle, x::Union{T,AbstractVector{T}}) where {T<:Real}  = +(x,  t)
+-(x::Union{T,AbstractVector{T}}, t::Triangle) where {T<:Real}  = +(x, -t)
+-(t::Triangle, x::Union{T,AbstractVector{T}}) where {T<:Real}  = +(t, -x)
 
 *(x::Real, t::Triangle) = Triangle(x*t.magnitude, t.width, x*t.dc, t.shift, t.period)
 *(t::Triangle, x::Real) = *(x,   t)

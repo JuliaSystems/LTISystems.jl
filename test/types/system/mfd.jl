@@ -1,6 +1,4 @@
-## MatrixFractionDescriptions
-using Polynomials
-using PolynomialMatrices
+print("Starting tests for `MatrixFractionDescriptions`...")
 
 # Defining left MatrixFractionDescriptions
 s = Poly([0, 1],:s)
@@ -55,3 +53,5 @@ sys = ss(A,B,C,D)
 # ml.D
 #
 # @test isapprox(mr, ml; rtol=10)
+
+print("Tests for `MatrixFractionDescriptions` finished.")

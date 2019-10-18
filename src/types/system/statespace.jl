@@ -1,4 +1,4 @@
-immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
+struct StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
   A::M1
   B::M2
   C::M3
@@ -10,16 +10,16 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
 
   # Constructors
   # Continuous-time, single-input-single-output state-space model
-  function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix}(A::M1, B::M2, C::M3, D::Real)
+  function (::Type{StateSpace})(A::M1, B::M2, C::M3, D::Real) where {M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix}
     d = fill(D,1,1)
     nx, nu, ny = _sscheck(A, B, C, d)
     new{Val{:siso},Val{:cont},M1,M2,M3,typeof(d)}(A, B, C, d, nx, nu, ny, zero(Float64))
   end
 
   # Discrete-time, single-input-single-output state-space model
-  function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix}(A::M1, B::M2, C::M3, D::Real, Ts::Real)
+  function (::Type{StateSpace})(A::M1, B::M2, C::M3, D::Real, Ts::Real) where {M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix}
     d = fill(D,1,1)
     nx, nu, ny = _sscheck(A, B, C, d, Ts)
     new{Val{:siso},Val{:disc},M1,M2,M3,typeof(d)}(A, B, C, d, nx, nu, ny,
@@ -27,15 +27,15 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
   end
 
   # Continuous-time, multi-input-multi-output state-space model
-  function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4)
+  function (::Type{StateSpace})(A::M1, B::M2, C::M3, D::M4) where {M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix,M4<:AbstractMatrix}
     nx, nu, ny = _sscheck(A, B, C, D)
     new{Val{:mimo},Val{:cont},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny, zero(Float64))
   end
 
   # Discrete-time, multi-input-multi-output state-space model
-  function (::Type{StateSpace}){M1<:AbstractMatrix,M2<:AbstractMatrix,
-    M3<:AbstractMatrix,M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, Ts::Real)
+  function (::Type{StateSpace})(A::M1, B::M2, C::M3, D::M4, Ts::Real) where {M1<:AbstractMatrix,M2<:AbstractMatrix,
+    M3<:AbstractMatrix,M4<:AbstractMatrix}
     nx, nu, ny = _sscheck(A, B, C, D, Ts)
     new{Val{:mimo},Val{:disc},M1,M2,M3,M4}(A, B, C, D, nx, nu, ny,
       convert(Float64, Ts))
@@ -58,8 +58,7 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
     ucalc = u(t, x.x)
     ucalc = isa(ucalc, Real) ? [ucalc] : ucalc
     if !isa(ucalc, AbstractVector) || length(ucalc) ≠ sys.nu || !(eltype(ucalc) <: Real)
-      warn("sys(t,x,dx,u): u(t,x) has to be an `AbstractVector` of length $(sys.nu), containing `Real` values")
-      throw(DomainError())
+      throw(DomainError(u(t,x), "sys(t,x,dx,u): u(t,x) has to be an `AbstractVector` of length $(sys.nu), containing `Real` values"))
     end
     x.u   = ucalc
     x.y   = C*x.x + D*x.u
@@ -69,16 +68,15 @@ immutable StateSpace{T,S,M1,M2,M3,M4} <: LtiSystem{T,S}
   ## Frequency response
   (sys::StateSpace{Val{:siso}})(x::Number)                                    =
     _eval(sys, x)[1]
-  (sys::StateSpace{Val{:siso}}){M<:Number}(X::AbstractArray{M})               =
+  (sys::StateSpace{Val{:siso}})(X::AbstractArray{M}) where {M<:Number}        =
     reshape(_eval(sys, X), size(X))
   (sys::StateSpace{Val{:mimo}})(x::Number)                                    =
     _eval(sys, x)
-  (sys::StateSpace{Val{:mimo}}){M<:Number}(X::AbstractArray{M})               =
+  (sys::StateSpace{Val{:mimo}})(X::AbstractArray{M}) where {M<:Number}        =
     _eval(sys, X)
-  function (sys::StateSpace){T<:Real}(; ω::Union{T, AbstractArray{T}} = Float64[])
+  function (sys::StateSpace)(; ω::Union{T, AbstractArray{T}} = Float64[]) where {T<:Real}
     if isempty(ω)
-      warn("sys(): Provide an argument for the function call. Refer to `?freqresp`.")
-      throw(DomainError())
+      throw(DomainError(w, "sys(): Provide an argument for the function call. Refer to `?freqresp`."))
     end
     freqresp(sys, ω)
   end
@@ -93,48 +91,39 @@ function _sscheck(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix,
   nd, md  = size(D)
 
   if Ts < zero(Ts) || isinf(Ts)
-    warn("StateSpace: Ts must be non-negative real number")
-    throw(DomainError())
+    throw(DomainError(Ts, "StateSpace: Ts must be non-negative real number"))
   end
 
   if na ≠ ma || !(eltype(A) <: Real)
-    warn("StateSpace: A must be a square matrix of real numbers")
-    throw(DomainError())
+    throw(DomainError(A, "StateSpace: A must be a square matrix of real numbers"))
   end
 
   if !(eltype(B) <: Real)
-    warn("StateSpace: B must be a matrix of real numbers")
-    throw(DomainError())
+    throw(DomainError(B, "StateSpace: B must be a matrix of real numbers"))
   end
 
   if !(eltype(C) <: Real)
-    warn("StateSpace: C must be a matrix of real numbers")
-    throw(DomainError())
+    throw(DomainError(C, "StateSpace: C must be a matrix of real numbers"))
   end
 
   if !(eltype(D) <: Real)
-    warn("StateSpace: D must be a matrix of real numbers")
-    throw(DomainError())
+    throw(DomainError(D, "StateSpace: D must be a matrix of real numbers"))
   end
 
   if na ≠ nb
-    warn("StateSpace: A and B must have the same number of rows")
-    throw(DomainError())
+    throw(DomainError((A, B), "StateSpace: A and B must have the same number of rows"))
   end
 
   if ma ≠ mc
-    warn("StateSpace: A and C must have the same number of columns")
-    throw(DomainError())
+    throw(DomainError((A, C), "StateSpace: A and C must have the same number of columns"))
   end
 
   if nc ≠ nd || nc < 1
-    warn("StateSpace: C and D must have the same number (≥1) of rows")
-    throw(DomainError())
+    throw(DomainError((C, D), "StateSpace: C and D must have the same number (≥1) of rows"))
   end
 
   if mb ≠ md || mb < 1
-    warn("StateSpace: B and D must have the same number (≥1) of columns")
-    throw(DomainError())
+    throw(DomainError((B, D), "StateSpace: B and D must have the same number (≥1) of columns"))
   end
 
   return na, mb, nc
@@ -148,8 +137,8 @@ ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::Real = zero(Float
 ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::Real, Ts::Real)    =
   StateSpace(A, B, C, D, Ts)
 
-ss{T<:Real}(D::T)           = StateSpace(zeros(T,0,0), zeros(T,0,1), zeros(T,1,0), D)
-ss{T<:Real}(D::T, Ts::Real) = StateSpace(zeros(T,0,0), zeros(T,0,1), zeros(T,1,0), D, Ts)
+ss(D::T) where {T<:Real}           = StateSpace(zeros(T,0,0), zeros(T,0,1), zeros(T,1,0), D)
+ss(D::T, Ts::Real) where {T<:Real} = StateSpace(zeros(T,0,0), zeros(T,0,1), zeros(T,1,0), D, Ts)
 
 # MIMO
 ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix)    =
@@ -172,9 +161,9 @@ function ss(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix,
   StateSpace(A, B, C, d, Ts)
 end
 
-ss{T<:Real}(D::AbstractMatrix{T})           = StateSpace(zeros(T,0,0),
+ss(D::AbstractMatrix{T}) where {T<:Real}           = StateSpace(zeros(T,0,0),
   zeros(T,0,size(D,2)), zeros(T,size(D,1),0), D)
-ss{T<:Real}(D::AbstractMatrix{T}, Ts::Real) = StateSpace(zeros(T,0,0),
+ss(D::AbstractMatrix{T}, Ts::Real) where {T<:Real} = StateSpace(zeros(T,0,0),
   zeros(T,0,size(D,2)), zeros(T,size(D,1),0), D, Ts)
 
 # # Catch-all for convenience when dealing with scalars, vectors, etc.
@@ -204,7 +193,7 @@ start(s::StateSpace{Val{:mimo}})        = start(s.D)
 next(s::StateSpace{Val{:mimo}}, state)  = (s[state], state+1)
 done(s::StateSpace{Val{:mimo}}, state)  = done(s.D, state)
 
-eltype{S,M1}(::Type{StateSpace{Val{:mimo},Val{S},M1}}) =
+eltype(::Type{StateSpace{Val{:mimo},Val{S},M1}}) where {S,M1} =
   StateSpace{Val{:siso},Val{S},M1}
 
 length(s::StateSpace{Val{:mimo}}) = length(s.D)
@@ -258,19 +247,20 @@ getindex(s::StateSpace{Val{:mimo}}, rows, ::Colon)    = s[rows, 1:s.nu]
 getindex(s::StateSpace{Val{:mimo}}, ::Colon, cols)    = s[1:s.ny, cols]
 getindex(s::StateSpace{Val{:mimo}}, ::Colon)          = s[1:end]
 getindex(s::StateSpace{Val{:mimo}}, ::Colon, ::Colon) = s[1:s.ny,1:s.nu]
-endof(s::StateSpace{Val{:mimo}})                      = endof(s.D)
+firstindex(s::StateSpace{Val{:mimo}})                 = firstindex(s.D)
+lastindex(s::StateSpace{Val{:mimo}})                  = lastindex(s.D)
 
 # Multiplicative and additive identities (meaningful only for SISO)
-one{M1,M2,M3,M4}(::Type{StateSpace{Val{:siso},Val{:cont},M1,M2,M3,M4}})   =
+one(::Type{StateSpace{Val{:siso},Val{:cont},M1,M2,M3,M4}}) where {M1,M2,M3,M4}  =
   StateSpace(zeros(eltype(M1),0,0), zeros(eltype(M2),0,1), zeros(eltype(M3),1,0),
   one(eltype(M4)))
-one{M1,M2,M3,M4}(::Type{StateSpace{Val{:siso},Val{:disc},M1,M2,M3,M4}})   =
+one(::Type{StateSpace{Val{:siso},Val{:disc},M1,M2,M3,M4}}) where {M1,M2,M3,M4}  =
   StateSpace(zeros(eltype(M1),0,0), zeros(eltype(M2),0,1), zeros(eltype(M3),1,0),
   one(eltype(M4)), zero(Float64))
-zero{M1,M2,M3,M4}(::Type{StateSpace{Val{:siso},Val{:cont},M1,M2,M3,M4}})  =
+zero(::Type{StateSpace{Val{:siso},Val{:cont},M1,M2,M3,M4}}) where {M1,M2,M3,M4} =
   StateSpace(zeros(eltype(M1),0,0), zeros(eltype(M2),0,1), zeros(eltype(M3),1,0),
   zero(eltype(M4)))
-zero{M1,M2,M3,M4}(::Type{StateSpace{Val{:siso},Val{:disc},M1,M2,M3,M4}})  =
+zero(::Type{StateSpace{Val{:siso},Val{:disc},M1,M2,M3,M4}}) where {M1,M2,M3,M4} =
   StateSpace(zeros(eltype(M1),0,0), zeros(eltype(M2),0,1), zeros(eltype(M3),1,0),
   zero(eltype(M4)), zero(Float64))
 
@@ -324,21 +314,21 @@ function zeros(s::StateSpace)
   if nr == 0
     return Complex{Float64}[]
   end
-  Arc, Brc, Crc, Drc, mrc, nrc, prc = reduce(Ar.', Cr.', Br.', Dr.')
+  Arc, Brc, Crc, Drc, mrc, nrc, prc = reduce(transpose(Ar), transpose(Cr), transpose(Br), transpose(Dr))
   if nrc == 0
     return Complex{Float64}[]
   end
 
-  svdobj  = svdfact([Crc Drc], thin = false)
-  W       = flipdim(svdobj.Vt', 2)
+  svdobj  = svd([Crc Drc], full = true)
+  W       = reverse(adjoint(svdobj.Vt), dims=2)
   Af      = [Arc Brc]*W[:, 1:nrc]
 
   if mrc == 0
-    zerovalues = eigfact(Af).values
+    zerovalues = eigen(Af).values
     return zerovalues
   else
     Bf    = W[1:nrc,1:nrc]
-    zerovalues = eigfact(Af, Bf).values
+    zerovalues = eigen(Af, Bf).values
     return zerovalues
   end
 end
@@ -349,7 +339,7 @@ tzeros(s::StateSpace) = zeros(minreal(s))
 # Poles of a state-space model
 function poles(s::StateSpace)
   Aₘ, _, _, _ = minreal(s.A, s.B, s.C, s.D)
-  return eigfact(Aₘ).values
+  return eigen!(Aₘ).values
 end
 
 # Negative of a state-space model
@@ -359,8 +349,8 @@ end
 -(s::StateSpace{Val{:mimo},Val{:disc}}) = StateSpace(s.A, s.B, -s.C, -s.D, s.Ts)
 
 # Addition
-function _ssparallel{T1,T2,S}(s1::StateSpace{Val{T1},Val{S}},
-  s2::StateSpace{Val{T2},Val{S}})
+function _ssparallel(s1::StateSpace{Val{T1},Val{S}},
+  s2::StateSpace{Val{T2},Val{S}}) where {T1,T2,S}
   if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts ≠ zero(s2.Ts)
     warn("parallel(s1,s2): Sampling time mismatch")
     throw(DomainError())
@@ -393,46 +383,36 @@ function +(s1::StateSpace{Val{:siso},Val{:disc}},
   StateSpace(a, b, c, d[1], Ts)
 end
 
-function +{T1,T2}(s1::StateSpace{Val{T1},Val{:cont}},
-  s2::StateSpace{Val{T2},Val{:cont}})
+function +(s1::StateSpace{Val{T1},Val{:cont}},
+  s2::StateSpace{Val{T2},Val{:cont}}) where {T1,T2}
   a, b, c, d, _ = _ssparallel(s1, s2)
   StateSpace(a, b, c, d)
 end
 
-function +{T1,T2}(s1::StateSpace{Val{T1},Val{:disc}},
-  s2::StateSpace{Val{T2},Val{:disc}})
+function +(s1::StateSpace{Val{T1},Val{:disc}},
+  s2::StateSpace{Val{T2},Val{:disc}}) where {T1,T2}
   a, b, c, d, Ts = _ssparallel(s1, s2)
   StateSpace(a, b, c, d, Ts)
 end
 
-.+(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = +(s1, s2)
-
-+{T}(s::StateSpace{Val{T},Val{:disc}}, g::Union{Real,AbstractMatrix}) =
++(s::StateSpace{Val{T},Val{:disc}}, g::Union{Real,AbstractMatrix}) where {T} =
   +(s, ss(g, samplingtime(s)))
-+{T}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:disc}}) =
++(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:disc}}) where {T} =
   +(ss(g, samplingtime(s)), s)
-+{T}(s::StateSpace{Val{T},Val{:cont}}, g::Union{Real,AbstractMatrix}) =
++(s::StateSpace{Val{T},Val{:cont}}, g::Union{Real,AbstractMatrix}) where {T} =
   +(s, ss(g))
-+{T}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:cont}}) =
++(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:cont}}) where {T} =
   +(ss(g), s)
-
-.+(s::StateSpace{Val{:siso}}, g::Real)    = +(s, g)
-.+(g::Real, s::StateSpace{Val{:siso}})    = +(g, s)
 
 # Subtraction
 -(s1::StateSpace, s2::StateSpace) = +(s1, -s2)
 
-.-(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = -(s1, s2)
-
 -(s::StateSpace, g::Union{Real,AbstractMatrix}) = +(s, -g)
 -(g::Union{Real,AbstractMatrix}, s::StateSpace) = +(g, -s)
 
-.-(s::StateSpace{Val{:siso}}, g::Real)    = -(s, g)
-.-(g::Real, s::StateSpace{Val{:siso}})    = -(g, s)
-
 # Multiplication
-function _ssseries{T1,T2,S}(s1::StateSpace{Val{T1},Val{S}},
-  s2::StateSpace{Val{T2},Val{S}})
+function _ssseries(s1::StateSpace{Val{T1},Val{S}},
+  s2::StateSpace{Val{T2},Val{S}}) where {T1,T2,S}
   # Remark: s1*s2 implies u -> s2 -> s1 -> y
 
   if s1.Ts ≉ s2.Ts && s1.Ts ≠ zero(s1.Ts) && s2.Ts ≠ zero(s2.Ts)
@@ -468,41 +448,31 @@ function *(s1::StateSpace{Val{:siso},Val{:disc}},
   StateSpace(a, b, c, d[1], Ts)
 end
 
-function *{T1,T2}(s1::StateSpace{Val{T1},Val{:cont}},
-  s2::StateSpace{Val{T2},Val{:cont}})
+function *(s1::StateSpace{Val{T1},Val{:cont}},
+  s2::StateSpace{Val{T2},Val{:cont}}) where {T1,T2}
   a, b, c, d, _ = _ssseries(s1, s2)
   StateSpace(a, b, c, d)
 end
 
-function *{T1,T2}(s1::StateSpace{Val{T1},Val{:disc}},
-  s2::StateSpace{Val{T2},Val{:disc}})
+function *(s1::StateSpace{Val{T1},Val{:disc}},
+  s2::StateSpace{Val{T2},Val{:disc}}) where {T1,T2}
   a, b, c, d, Ts = _ssseries(s1, s2)
   StateSpace(a, b, c, d, Ts)
 end
 
-.*(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = *(s1, s2)
-
-*{T}(s::StateSpace{Val{T},Val{:disc}}, g::Union{Real,AbstractMatrix}) =
+*(s::StateSpace{Val{T},Val{:disc}}, g::Union{Real,AbstractMatrix}) where {T} =
   *(s, ss(g, samplingtime(s)))
-*{T}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:disc}}) =
+*(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:disc}}) where {T} =
   *(ss(g, samplingtime(s)), s)
-*{T}(s::StateSpace{Val{T},Val{:cont}}, g::Union{Real,AbstractMatrix}) =
+*(s::StateSpace{Val{T},Val{:cont}}, g::Union{Real,AbstractMatrix}) where {T} =
   *(s, ss(g))
-*{T}(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:cont}}) =
+*(g::Union{Real,AbstractMatrix}, s::StateSpace{Val{T},Val{:cont}}) where {T} =
   *(ss(g), s)
-
-.*(s::StateSpace{Val{:siso}}, g::Real)    = *(s, g)
-.*(g::Real, s::StateSpace{Val{:siso}})    = *(g, s)
 
 # Division
 /(s1::StateSpace, s2::StateSpace)         = *(s1, inv(s2))
-
-./(s1::StateSpace{Val{:siso}}, s2::StateSpace{Val{:siso}}) = /(s1, s2)
 
 /(s::StateSpace, g::Union{Real,AbstractMatrix}) =
   *(s, inv(g))
 /(g::Union{Real,AbstractMatrix}, s::StateSpace) =
   *(g, inv(s))
-
-./(s::StateSpace{Val{:siso}}, g::Real)    = /(s, g)
-./(g::Real, s::StateSpace{Val{:siso}})    = /(g, s)

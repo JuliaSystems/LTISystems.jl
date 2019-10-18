@@ -11,8 +11,8 @@ place and returns the modified version, whereas `unwrap` does not modify `Θ₀`
 
 **See also:* `freqresp`, `bode`, `nyquist`.
 """
-function unwrap!{T<:AbstractFloat}(Θ::AbstractArray{T}, dim::Integer = ndims(Θ);
-  tol::Real = π)
+function unwrap!(Θ::AbstractArray{T}, dim::Integer = ndims(Θ);
+  tol::Real = π) where {T<:AbstractFloat}
   size(Θ, dim) < 2 && return Θ
   settol  = max(float(tol), π)
   setrng  = 2settol
@@ -26,5 +26,5 @@ function unwrap!{T<:AbstractFloat}(Θ::AbstractArray{T}, dim::Integer = ndims(Θ
   return Θ
 end
 
-unwrap{T<:Real}(Θ::AbstractArray{T}, dim::Integer = ndims(Θ);
-  tol::Real = π) = unwrap!(map(float,Θ), dim; tol = tol)
+unwrap(Θ::AbstractArray{T}, dim::Integer = ndims(Θ);
+  tol::Real = π) where {T<:Real} = unwrap!(map(float,Θ), dim; tol = tol)

@@ -60,8 +60,8 @@ julia> Dm
  0.0
 ```
 """
-function minreal{M1<:AbstractMatrix,M2<:AbstractMatrix,M3<:AbstractMatrix,
-  M4<:AbstractMatrix}(A::M1, B::M2, C::M3, D::M4, tol::Float64 = zero(Float64))
+function minreal(A::M1, B::M2, C::M3, D::M4, tol::Float64 = zero(Float64)) where {
+  M1<:AbstractMatrix,M2<:AbstractMatrix,M3<:AbstractMatrix,M4<:AbstractMatrix}
   @assert size(A,1) == size(A,2) "minreal: A must be square"
   @assert size(A,1) == size(B,1) "minreal: A and B must have the same row size"
   @assert size(A,1) == size(C,2) "minreal: A and C must have the same column size"
@@ -72,7 +72,7 @@ function minreal{M1<:AbstractMatrix,M2<:AbstractMatrix,M3<:AbstractMatrix,
   Tc, c = rosenbrock(A, B, tol)
   ATemp = (Tc'*A*Tc)[n-c+1:n,n-c+1:n]
   CTemp = (C*Tc)[:,n-c+1:n]
-  To, o = rosenbrock(ATemp.', CTemp.', tol)
+  To, o = rosenbrock(transpose(ATemp), transpose(CTemp), tol)
 
   T     = view(Tc, :, n-c+1:n)*To
 

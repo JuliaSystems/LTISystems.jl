@@ -1,10 +1,10 @@
-immutable BodeResponse{T<:Real} <: SystemResponse
+struct BodeResponse{T<:Real} <: SystemResponse
   freqs::Vector{T}  # rad/sec
   mag::Array{T,3}   # abs, i.e., |G|
   phase::Array{T,3} # radians
 
-  function (::Type{BodeResponse}){T1<:Real,T2<:Real,T3<:Real}(
-    freqs::AbstractVector{T1}, mag::AbstractArray{T2,3}, phase::AbstractArray{T3,3})
+  function (::Type{BodeResponse})(freqs::AbstractVector{T1}, mag::AbstractArray{T2,3},
+    phase::AbstractArray{T3,3}) where {T1<:Real,T2<:Real,T3<:Real}
     if size(mag) ≠ size(phase)
       warn("BodeResponse(freqs, mag, phase): `mag` and `phase` must have same dimensions")
       throw(DomainError())
@@ -22,9 +22,9 @@ immutable BodeResponse{T<:Real} <: SystemResponse
   end
 end
 
-_bode{T<:Real}(sys::LtiSystem{Val{:siso}}, ω::AbstractVector{T})  =
+_bode(sys::LtiSystem{Val{:siso}}, ω::AbstractVector{T}) where {T<:Real} =
   reshape(freqresp(sys, ω), size(sys)..., length(ω))
-_bode{T<:Real}(sys::LtiSystem{Val{:mimo}}, ω::AbstractVector{T})  =
+_bode(sys::LtiSystem{Val{:mimo}}, ω::AbstractVector{T}) where {T<:Real} =
   freqresp(sys, ω)
 
 """
@@ -58,13 +58,13 @@ when `using Plots`.
 
 **See also:** `freqresp`, `nyquist`.
 """
-function bode{T}(sys::LtiSystem, ω::AbstractVector{T})
+function bode(sys::LtiSystem, ω::AbstractVector{T}) where {T}
   # TODO: should we check for ω ≥ 0 ?
   fr = _bode(sys, ω)
   BodeResponse(ω, abs(fr), unwrap!(angle(fr)))
 end
 
-bode{T}(sys::LtiSystem{Val{T},Val{:disc}}) =
+bode(sys::LtiSystem{Val{T},Val{:disc}}) where {T} =
   bode(sys, logspace(-6, log10(π/samplingtime(sys)), 1000))
 
 @recipe function f(br::BodeResponse; iopairs = Tuple{Int,Int}[], freqs = :rads,

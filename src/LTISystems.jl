@@ -1,4 +1,4 @@
-__precompile__(true)
+#__precompile__(true)
 
 module LTISystems
 
@@ -17,6 +17,9 @@ using PolynomialMatrices
 # Polynomials-related things
 using Polynomials
 
+# Linear Algebra related things
+using LinearAlgebra
+
 # RationalFunctions-related things
 using RationalFunctions
 import RationalFunctions: poles
@@ -31,16 +34,16 @@ import Base: convert, promote_rule
 import Base: one, zero
 
 # Import num, den for getting numerator and denominator polynomials
-import Base: num, den
+import Base: numerator, denominator
 
 # Import inv and zeros
 import Base: inv, zeros
 
 # Indexing
-import Base: getindex, setindex!, endof
+import Base: getindex, setindex!, firstindex, lastindex
 
 # Import iteration interface functions
-import Base: start, next, done, eltype, length, size
+import Base: iterate, IteratorSize, IteratorEltype, eltype, length, size
 
 # Import printing functions
 import Base: summary
@@ -49,7 +52,7 @@ import Base: summary
 import Base: step
 
 # Import mathematical operations for overloading
-import Base: +, .+, -, .-, *, .*, /, ./, ==, !=, isapprox, transpose
+import Base: +, -, *, /, ==, !=, isapprox, transpose
 
 # Export only the useful functions
 export

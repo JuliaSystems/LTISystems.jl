@@ -4,7 +4,7 @@
 # realization (Kailath, 1980, Section 6.4.1).
 # NOTE: Base this function on the SLICOT routine TC04AD.
 # NOTE: Is it necessary to make a SISO version of this function?
-function _mfd2ss{S,M1,M2}(mfd::MatrixFractionDescription{Val{:mimo},S,Val{:rfd},M1,M2})
+function _mfd2ss(mfd::MatrixFractionDescription{Val{:mimo},S,Val{:rfd},M1,M2}) where {S,M1,M2}
   Den, Num  = colred(mfd.D, mfd.N)
   kden, Phc = high_col_deg_matrix(Den)
   knum      = col_degree(Num)
@@ -82,7 +82,7 @@ function _mfd2ss{S,M1,M2}(mfd::MatrixFractionDescription{Val{:mimo},S,Val{:rfd},
   return A, B, C, D
 end
 
-function _mfd2ss{S,M1,M2}(mfd::MatrixFractionDescription{Val{:mimo},S,Val{:lfd},M1,M2})
+function _mfd2ss(mfd::MatrixFractionDescription{Val{:mimo},S,Val{:lfd},M1,M2}) where {S,M1,M2}
   Den, Num  = rowred(mfd.D,mfd.N)
   kden, Phr = high_row_deg_matrix(Den)
   knum      = row_degree(Num)

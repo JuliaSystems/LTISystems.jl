@@ -8,47 +8,47 @@
 
 # s = R(s)*inv(D(s)) where D(s) is diagonal with the product of all denominators
 # of column i in D[i,i]
-# R[i,j] is num(s[i,j]) times all denominators in den(s[:,j]) except den(s[i,j])
-function _tf2rfd(s::LTISystems.TransferFunction)
+# R[i,j] is num(s[i,j]) times all denominators in denominator(s[:,j]) except denominator(s[i,j])
+function _tf2rfd(s::TransferFunction)
   mat = s.mat
   n,m = size(mat)
-  dp  = fill(zero(den(mat[1])), m)
-  R   = map(num, mat)
-  map(num,s.mat)
+  dp  = fill(zero(denominator(mat[1])), m)
+  R   = map(numerator, mat)
+  map(numerator,s.mat)
   for i in 1:m
-    dp[i]   = Base.reduce(*, one(den(s.mat[1,i])), map(den,s.mat[:,i]))
+    dp[i] = Base.reduce(*, map(denominator,s.mat[:,i]), init=one(denominator(s.mat[1,i])))
     for j in 1:n
       for k in 1:n
         k == j && continue
-        R[j,i] *= den(s.mat[k,i])
+        R[j,i] *= denominator(s.mat[k,i])
       end
     end
   end
   R = PolyMatrix(R)
-  D = PolyMatrix(diagm(dp))
+  D = PolyMatrix(Matrix{eltype(dp)}(Diagonal(dp)))
   R, D
 end
 
 # s = inv(D(s))*R(s) where D(s) is diagonal with the product of all denominators
 # of column i in D[i,i]
-# R[i,j] is num(s[i,j]) times all denominators in den(s[j,:]) except den(s[i,j])
-function _tf2lfd(s::LTISystems.TransferFunction)
+# R[i,j] is num(s[i,j]) times all denominators in denominator(s[j,:]) except denominator(s[i,j])
+function _tf2lfd(s::TransferFunction)
   mat = s.mat
   n,m = size(mat)
-  dp  = fill(zero(den(mat[1])), n)
-  R   = map(num, mat)
-  map(num,s.mat)
+  dp  = fill(zero(denominator(mat[1])), n)
+  R   = map(numerator, mat)
+  map(numerator,s.mat)
   for i in 1:n
-    dp[i] = Base.reduce(*, one(den(s.mat[i,1])), map(den,s.mat[i,:]))
+    dp[i] = Base.reduce(*, map(denominator,s.mat[i,:]), init=one(denominator(s.mat[i,1])))
     for j in 1:m
       for k in 1:m
         k == j && continue
-        R[i,j] *= den(s.mat[i,k])
+        R[i,j] *= denominator(s.mat[i,k])
       end
     end
   end
   R = PolyMatrix(R)
-  D = PolyMatrix(diagm(dp))
+  D = PolyMatrix(Matrix{eltype(dp)}(Diagonal(dp)))
   R, D
 end
 

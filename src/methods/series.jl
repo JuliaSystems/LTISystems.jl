@@ -18,10 +18,10 @@ Continuous time rational transfer function model
 x^2 + 4x + 4
 ```
 """
-series{T1<:LtiSystem, T2<:LtiSystem}(s1::T1, s2::T2)     = *(s1,s2)
+series(s1::T1, s2::T2) where {T1<:LtiSystem, T2<:LtiSystem}     = *(s1,s2)
 
-series{T1<:LtiSystem, T2<:Real}(s1::T1, n::T2)           = *(s1, n)
-series{T1<:LtiSystem, T2<:Real}(n::T2, s1::T1)           = *(n ,s1)
+series(s1::T1, n::T2) where {T1<:LtiSystem, T2<:Real}           = *(s1, n)
+series(n::T2, s1::T1) where {T1<:LtiSystem, T2<:Real}           = *(n ,s1)
 
-series{T1<:LtiSystem, M2<:AbstractMatrix}(s1::T1, n::M2) = *(s1, n)
-series{T1<:LtiSystem, M2<:AbstractMatrix}(n::M2, s1::T1) = *(n ,s1)
+series(s1::T1, n::M2) where {T1<:LtiSystem, M2<:AbstractMatrix} = *(s1, n)
+series(n::M2, s1::T1) where {T1<:LtiSystem, M2<:AbstractMatrix} = *(n ,s1)

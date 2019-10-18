@@ -28,13 +28,13 @@ systems.
 
 **See also:** `bode`, `nyquist`, `samplingtime`.
 """
-freqresp{S}(sys::LtiSystem{Val{S},Val{:cont}}, x::Real)                     =
+freqresp(sys::LtiSystem{Val{S},Val{:cont}}, x::Real) where {S}                     =
   sys(1im*x)
-freqresp{S,M<:Real}(sys::LtiSystem{Val{S},Val{:cont}}, X::AbstractArray{M}) =
+freqresp(sys::LtiSystem{Val{S},Val{:cont}}, X::AbstractArray{M}) where {S,M<:Real} =
   sys(1im*X)
-freqresp{S}(sys::LtiSystem{Val{S},Val{:disc}}, x::Real)                     =
+freqresp(sys::LtiSystem{Val{S},Val{:disc}}, x::Real) where {S}                     =
   sys(exp(1im*samplingtime(sys)*x))
-freqresp{S,M<:Real}(sys::LtiSystem{Val{S},Val{:disc}}, X::AbstractArray{M}) =
+freqresp(sys::LtiSystem{Val{S},Val{:disc}}, X::AbstractArray{M}) where {S,M<:Real} =
   sys(exp(1im*samplingtime(sys)*X))
 
 # Implements algorithm found in:
@@ -45,7 +45,7 @@ function _eval(sys::StateSpace, x::Number)
   convert(AbstractMatrix{Complex128}, sys.D + sys.C*(R\sys.B))
 end
 
-function _eval{M<:Number}(sys::StateSpace, X::AbstractArray{M})
+function _eval(sys::StateSpace, X::AbstractArray{M}) where {M<:Number}
   resp = Array{Complex128}(size(sys)..., size(X)...)
   for idx in CartesianRange(indices(X))
     resp[:, :, idx] = sys.D + sys.C*((X[idx]*I - sys.A)\sys.B)

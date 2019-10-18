@@ -1,4 +1,4 @@
-info("Starting tests for `TransferFunction`...")
+print("Starting tests for `TransferFunction`...")
 
 # Rational transfer function constructions for SISO systems
 rc1   = RationalFunction([1], [2, 1], :s)     # 1/(s+2)
@@ -15,10 +15,10 @@ sysds4= tf(Poly(1, :z), [1, -0.5], 0.5)
 sysds5= tf(1, Poly([-0.5, 1], :z), 0.5)
 sysds6= tf([0, 1], [1, -0.5], 0.5, :z̄)
 
-@test num(syscs1) == num(syscs2) == num(syscs3) == num(syscs4) == num(syscs5)
-@test den(syscs1) == den(syscs2) == den(syscs3) == den(syscs4) == den(syscs5)
-@test num(sysds1) == num(sysds2) == num(sysds3) == num(sysds4) == num(sysds5) == num(sysds6)
-@test den(sysds1) == den(sysds2) == den(sysds3) == den(sysds4) == den(sysds5) == den(sysds6)
+@test numerator(syscs1) == numerator(syscs2) == numerator(syscs3) == numerator(syscs4) == numerator(syscs5)
+@test denominator(syscs1) == denominator(syscs2) == denominator(syscs3) == denominator(syscs4) == denominator(syscs5)
+@test numerator(sysds1) == numerator(sysds2) == numerator(sysds3) == numerator(sysds4) == numerator(sysds5) == numerator(sysds6)
+@test denominator(sysds1) == denominator(sysds2) == denominator(sysds3) == denominator(sysds4) == denominator(sysds5) == denominator(sysds6)
 
 # Rational transfer function constructions for MIMO systems
 rc2   = RationalFunction([1,1], [3,1], :s)
@@ -28,16 +28,16 @@ rd2   = RationalFunction([-0.1,1], [-0.3,1], :z)
 matd  = diagm([rd1, rd2])
 sysdm = tf(matd, 0.5)
 
-@test num(syscm) == [num(rc1) zero(num(rc1)); zero(num(rc1)) num(rc2)]
-@test den(syscm) == [den(rc1) one(num(rc1)); one(num(rc1)) den(rc2)]
-@test num(sysdm) == [num(rd1) zero(num(rd1)); zero(num(rd1)) num(rd2)]
-@test den(sysdm) == [den(rd1) one(num(rd1)); one(num(rd1)) den(rd2)]
+@test numerator(syscm) == [numerator(rc1) zero(numerator(rc1)); zero(numerator(rc1)) numerator(rc2)]
+@test denominator(syscm) == [denominator(rc1) one(numerator(rc1)); one(numerator(rc1)) denominator(rc2)]
+@test numerator(sysdm) == [numerator(rd1) zero(numerator(rd1)); zero(numerator(rd1)) numerator(rd2)]
+@test denominator(sysdm) == [denominator(rd1) one(numerator(rd1)); one(numerator(rd1)) denominator(rd2)]
 
-@test num(tf(diagm([1,2]))) == [Poly(1,:s) Poly(0,:s); Poly(0,:s) Poly(2,:s)]
-@test den(tf(diagm([1,2]))) == [Poly(1,:s) Poly(1,:s); Poly(1,:s) Poly(1,:s)]
+@test numerator(tf(diagm([1,2]))) == [Poly(1,:s) Poly(0,:s); Poly(0,:s) Poly(2,:s)]
+@test denominator(tf(diagm([1,2]))) == [Poly(1,:s) Poly(1,:s); Poly(1,:s) Poly(1,:s)]
 
-@test num(tf(diagm([1,2]), 0.5)) == [Poly(1,:z) Poly(0,:z); Poly(0,:z) Poly(2,:z)]
-@test den(tf(diagm([1,2]), 0.5)) == [Poly(1,:z) Poly(1,:z); Poly(1,:z) Poly(1,:z)]
+@test numerator(tf(diagm([1,2]), 0.5)) == [Poly(1,:z) Poly(0,:z); Poly(0,:z) Poly(2,:z)]
+@test denominator(tf(diagm([1,2]), 0.5)) == [Poly(1,:z) Poly(1,:z); Poly(1,:z) Poly(1,:z)]
 
 # Sampling time
 @test samplingtime(syscs1) == samplingtime(syscm) == zero(Float64)
@@ -48,4 +48,4 @@ sysdm = tf(matd, 0.5)
 @test numinputs(syscm)  == numinputs(sysdm)   == 2
 @test numoutputs(syscm) == numoutputs(sysdm)  == 2
 
-info("Tests for `TransferFunction` finished.")
+print("Tests for `TransferFunction` finished.")

@@ -16,7 +16,7 @@ function mimo(s::LtiSystem{Val{:siso}})
 end
 
 # Sampling-time
-iscontinuous{T}(::LtiSystem{Val{T},Val{:cont}}) = true
-iscontinuous{T}(::LtiSystem{Val{T},Val{:disc}}) = false
-isdiscrete(s::LtiSystem)                        = !iscontinuous(s)
-samplingtime{T}(::LtiSystem{Val{T},Val{:disc}}) = zero(Float64)
+iscontinuous(::LtiSystem{Val{T},Val{:cont}}) where {T} = true
+iscontinuous(::LtiSystem{Val{T},Val{:disc}}) where {T} = false
+isdiscrete(s::LtiSystem)                               = !iscontinuous(s)
+samplingtime(::LtiSystem{Val{T},Val{:disc}}) where {T} = zero(Float64)

@@ -1,12 +1,12 @@
-type TimeResponse{T,S} <: SystemResponse
+mutable struct TimeResponse{T,S} <: SystemResponse
   t::Vector{T}
   x::Matrix{T}
   y::Matrix{T}
   u::Matrix{T}
   tsloc::Int
 
-  function (::Type{TimeResponse}){S}(t::Vector, x::Matrix, y::Matrix, u::Matrix,
-    ::Type{Val{S}} = Val{:cont})
+  function (::Type{TimeResponse})(t::Vector, x::Matrix, y::Matrix, u::Matrix,
+    ::Type{Val{S}} = Val{:cont}) where {S}
     (length(t) == size(x, 1) == size(y, 1) == size(u, 1)) ||
       DimensionMismatch("TimeResponse(t,x,y,u): dimension mistmatch")
 
